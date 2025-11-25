@@ -15,20 +15,16 @@
         .tab-btn { background: none; border: none; color: var(--color-text-light); font-weight: bold; cursor: pointer; padding: 10px; font-size: 0.9rem; white-space: nowrap; }
         .tab-btn.active { color: var(--color-primary); border-bottom: 3px solid var(--color-primary); }
 
+        /* KARTU PESANAN */
+        .order-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow-soft); border-left: 5px solid var(--color-primary); }
+        .order-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .order-status { background: #333; color: gold; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+
         /* LIST MENU */
         .manage-item { display: flex; gap: 15px; background: var(--color-surface); padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid var(--color-border); align-items: center; }
         .manage-thumb { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 30px; }
         .manage-info { flex: 1; }
         .manage-actions { display: flex; gap: 8px; }
-
-        /* KARTU PESANAN */
-        .order-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow-soft); border-left: 5px solid var(--color-primary); }
-        .order-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .order-status { background: #333; color: gold; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
-        
-        /* PILIHAN TIPE GAMBAR */
-        .img-type-selector { display: flex; gap: 15px; margin-bottom: 10px; }
-        .radio-label { display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: 600; }
         
         /* LOGIN OVERLAY */
         .admin-login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111827; display: flex; justify-content: center; align-items: center; z-index: 9999; }
@@ -84,18 +80,17 @@
                 
                 <div class="form-group">
                     <label class="form-label">Tipe Gambar</label>
-                    <div class="img-type-selector">
-                        <label class="radio-label"><input type="radio" name="imgType" value="file" checked onclick="toggleInput('file', 'Add')"> 📸 Upload Foto</label>
-                        <label class="radio-label"><input type="radio" name="imgType" value="emoji" onclick="toggleInput('emoji', 'Add')"> 😀 Pakai Emoji</label>
+                    <div style="display:flex; gap:15px; margin-bottom:10px;">
+                        <label><input type="radio" name="imgType" value="file" checked onclick="toggleInput('file', 'Add')"> 📸 Foto</label>
+                        <label><input type="radio" name="imgType" value="emoji" onclick="toggleInput('emoji', 'Add')"> 😀 Emoji</label>
                     </div>
                     
                     <div id="inputGroupFileAdd">
                         <input type="file" class="search-input" id="mImgFile" accept="image/*">
-                        <p style="font-size:0.8rem; color:orange;">*Max 700KB. Gunakan screenshot agar ringan.</p>
+                        <p style="font-size:0.8rem; color:orange;">*Max 700KB</p>
                     </div>
-
                     <div id="inputGroupEmojiAdd" style="display:none;">
-                        <input type="text" class="search-input" id="mEmojiTxt" placeholder="Contoh: 🍔, 🍜, ☕" maxlength="5">
+                        <input type="text" class="search-input" id="mEmojiTxt" placeholder="Contoh: 🍔" maxlength="5">
                     </div>
                 </div>
 
@@ -135,12 +130,11 @@
                     <div class="form-group"><label class="form-label">Deskripsi</label><textarea class="search-input" id="editDesc" required></textarea></div>
                     
                     <div class="form-group">
-                        <label class="form-label">Ganti Gambar (Opsional)</label>
-                        <div class="img-type-selector">
-                            <label class="radio-label"><input type="radio" name="editImgType" value="file" checked onclick="toggleInput('file', 'Edit')"> 📸 Foto</label>
-                            <label class="radio-label"><input type="radio" name="editImgType" value="emoji" onclick="toggleInput('emoji', 'Edit')"> 😀 Emoji</label>
+                        <label class="form-label">Ganti Gambar</label>
+                        <div style="display:flex; gap:15px; margin-bottom:10px;">
+                            <label><input type="radio" name="editImgType" value="file" checked onclick="toggleInput('file', 'Edit')"> 📸 Foto</label>
+                            <label><input type="radio" name="editImgType" value="emoji" onclick="toggleInput('emoji', 'Edit')"> 😀 Emoji</label>
                         </div>
-                        
                         <div id="inputGroupFileEdit">
                             <input type="file" class="search-input" id="editImgFile" accept="image/*">
                         </div>
@@ -156,7 +150,7 @@
     </div>
 
     <script>
-        // --- CONFIG ---
+        // CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyBDJO_Lsro9IpkXU1ducHRwZHKc5kH6GVQ",
             authDomain: "pemesan-makanan-online.firebaseapp.com",
@@ -172,19 +166,31 @@
         const db = firebase.database();
         let menuCache = {};
 
-        // LOGIN
-        if(sessionStorage.getItem('isAdmin') === 'true') {
+        // --- [PERBAIKAN UTAMA DI SINI] ---
+        // Cek Kunci 'isAdminLoggedIn' (bukan 'isAdmin' saja)
+        if(sessionStorage.getItem('isAdminLoggedIn') === 'true') {
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             initListeners();
         }
 
         function adminLogin() {
-            if(document.getElementById('admUser').value === 'admin' && document.getElementById('admPass').value === '12345') {
-                sessionStorage.setItem('isAdmin', 'true'); location.reload();
-            } else { document.getElementById('errMsg').style.display = 'block'; }
+            const u = document.getElementById('admUser').value;
+            const p = document.getElementById('admPass').value;
+            if(u === 'admin' && p === '12345') {
+                // Simpan kunci yang BENAR
+                sessionStorage.setItem('isAdminLoggedIn', 'true'); 
+                location.reload();
+            } else {
+                document.getElementById('errMsg').style.display = 'block';
+            }
         }
-        function adminLogout() { sessionStorage.removeItem('isAdmin'); window.location.href = 'index.html'; }
+
+        function adminLogout() {
+            // Hapus kunci yang BENAR
+            sessionStorage.removeItem('isAdminLoggedIn'); 
+            window.location.href = 'index.html';
+        }
 
         // UTILS
         function switchTab(tab) {
@@ -198,59 +204,43 @@
             else { document.getElementById('tabManage').style.display = 'block'; document.querySelectorAll('.tab-btn')[2].classList.add('active'); }
         }
 
-        // TOGGLE INPUT FOTO/EMOJI
         function toggleInput(type, mode) {
-            const fileDiv = document.getElementById('inputGroupFile' + mode);
-            const emojiDiv = document.getElementById('inputGroupEmoji' + mode);
-            
-            if(type === 'file') {
-                fileDiv.style.display = 'block';
-                emojiDiv.style.display = 'none';
-            } else {
-                fileDiv.style.display = 'none';
-                emojiDiv.style.display = 'block';
-            }
+            document.getElementById('inputGroupFile'+mode).style.display = (type === 'file') ? 'block' : 'none';
+            document.getElementById('inputGroupEmoji'+mode).style.display = (type === 'emoji') ? 'block' : 'none';
         }
 
         function initListeners() { listenOrders(); listenMenu(); }
 
-        // --- 1. TAMBAH MENU (HYBRID) ---
+        // 1. TAMBAH MENU
         function addMenu(e) {
             e.preventDefault();
             const btn = document.getElementById('saveBtn');
             const status = document.getElementById('status');
-            
-            // Cek tipe input
             const type = document.querySelector('input[name="imgType"]:checked').value;
             
             btn.disabled = true; btn.textContent = "Memproses...";
 
             if (type === 'file') {
-                // --- LOGIKA FOTO (BASE64) ---
                 const file = document.getElementById('mImgFile').files[0];
-                if(!file) { alert("Pilih foto dulu!"); btn.disabled=false; return; }
+                if(!file) { alert("Pilih foto!"); btn.disabled=false; return; }
                 if(file.size > 700000) { alert("File terlalu besar!"); btn.disabled=false; return; }
 
                 const reader = new FileReader();
-                reader.onload = function(evt) {
-                    saveToDb(evt.target.result); // Simpan Base64
-                };
+                reader.onload = function(evt) { saveToDb(evt.target.result); };
                 reader.readAsDataURL(file);
-
             } else {
-                // --- LOGIKA EMOJI ---
                 const emoji = document.getElementById('mEmojiTxt').value;
-                if(!emoji) { alert("Isi emoji dulu!"); btn.disabled=false; return; }
-                saveToDb(emoji); // Simpan Text Emoji
+                if(!emoji) { alert("Isi emoji!"); btn.disabled=false; return; }
+                saveToDb(emoji);
             }
 
-            function saveToDb(imgData) {
+            function saveToDb(img) {
                 const data = {
                     name: document.getElementById('mName').value,
                     price: parseInt(document.getElementById('mPrice').value),
                     category: document.getElementById('mCat').value,
                     description: document.getElementById('mDesc').value,
-                    image: imgData,
+                    image: img,
                     rating: 5.0, deliveryTime: '20m'
                 };
                 db.ref('menu_items').push(data).then(() => {
@@ -262,7 +252,7 @@
             }
         }
 
-        // --- 2. EDIT MENU (HYBRID) ---
+        // 2. EDIT MENU
         function openEditModal(id) {
             const item = menuCache[id];
             if(!item) return;
@@ -279,8 +269,6 @@
             e.preventDefault();
             const id = document.getElementById('editId').value;
             const btn = document.getElementById('editSaveBtn');
-            
-            // Cek tipe input edit
             const type = document.querySelector('input[name="editImgType"]:checked').value;
             const file = document.getElementById('editImgFile').files[0];
             const emoji = document.getElementById('editEmojiTxt').value;
@@ -294,35 +282,26 @@
                 description: document.getElementById('editDesc').value
             };
 
-            // Logic update gambar
             if (type === 'file' && file) {
-                // User pilih upload foto baru
                 if(file.size > 700000) { alert("File besar!"); btn.disabled=false; return; }
                 const reader = new FileReader();
-                reader.onload = function(evt) {
-                    updates.image = evt.target.result;
-                    pushUpdate(id, updates, btn);
-                };
+                reader.onload = function(evt) { updates.image = evt.target.result; pushUpdate(id, updates, btn); };
                 reader.readAsDataURL(file);
             } else if (type === 'emoji' && emoji) {
-                // User pilih ganti emoji baru
-                updates.image = emoji;
-                pushUpdate(id, updates, btn);
+                updates.image = emoji; pushUpdate(id, updates, btn);
             } else {
-                // User tidak ganti gambar (pakai data lama)
                 pushUpdate(id, updates, btn);
             }
         }
 
         function pushUpdate(id, data, btn) {
             db.ref('menu_items/' + id).update(data).then(() => {
-                alert("✅ Updated!");
-                closeEditModal();
+                alert("✅ Updated!"); closeEditModal();
                 btn.disabled = false; btn.textContent = "Update Menu";
             });
         }
 
-        // --- 3. LISTENERS LAIN ---
+        // 3. LISTENERS
         function listenOrders() {
             db.ref('orders').on('value', snap => {
                 const data = snap.val();
@@ -361,9 +340,7 @@
                 if(data) {
                     Object.keys(data).forEach(k => {
                         const m = data[k];
-                        // Cek apakah image itu Foto atau Emoji untuk thumbnail
-                        let thumb = m.image.startsWith('data:') ? `<img src="${m.image}" class="manage-thumb">` : `<div class="manage-thumb">${m.image}</div>`;
-                        
+                        let thumb = (m.image.startsWith('data:') || m.image.startsWith('http')) ? `<img src="${m.image}" class="manage-thumb">` : `<div class="manage-thumb">${m.image}</div>`;
                         list.innerHTML += `
                             <div class="manage-item">
                                 ${thumb}
