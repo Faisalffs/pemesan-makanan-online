@@ -3,105 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Super</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Dashboard Restoran</title> <link rel="stylesheet" href="style.css">
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <style>
-        /* TAB STYLE */
+        /* TAB NAVIGASI */
         .admin-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--color-border); padding-bottom: 10px; overflow-x: auto; }
-        .tab-btn { background: none; border: none; color: var(--color-text-light); font-weight: bold; cursor: pointer; padding: 10px; font-size: 0.9rem; white-space: nowrap; }
+        .tab-btn { background: none; border: none; color: var(--color-text-light); font-weight: bold; cursor: pointer; padding: 10px; font-size: 0.9rem; white-space: nowrap; transition: 0.3s; }
+        .tab-btn:hover { color: var(--color-primary); }
         .tab-btn.active { color: var(--color-primary); border-bottom: 3px solid var(--color-primary); }
 
         /* KARTU PESANAN */
-        .order-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow-soft); border-left: 5px solid var(--color-primary); }
-        .order-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .order-status { background: #333; color: gold; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+        .order-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow-soft); border-left: 5px solid var(--color-primary); animation: fadeIn 0.5s; }
+        .order-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; border-bottom: 1px solid var(--color-border); padding-bottom: 10px; }
+        .order-status { background: #333; color: gold; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; letter-spacing: 0.5px; }
 
-        /* LIST MENU */
-        .manage-item { display: flex; gap: 15px; background: var(--color-surface); padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid var(--color-border); align-items: center; }
+        /* LIST MENU (UNTUK DIEDIT) */
+        .manage-item { display: flex; gap: 15px; background: var(--color-surface); padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid var(--color-border); align-items: center; transition: 0.2s; }
+        .manage-item:hover { transform: translateX(5px); border-color: var(--color-primary); }
         .manage-thumb { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 30px; }
         .manage-info { flex: 1; }
         .manage-actions { display: flex; gap: 8px; }
         
         /* LOGIN OVERLAY */
         .admin-login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111827; display: flex; justify-content: center; align-items: center; z-index: 9999; }
-        .login-box { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; }
-        .error-msg { color: red; margin-top: 10px; display: none; }
+        .login-box { background: white; padding: 40px; border-radius: 16px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .error-msg { color: #ef4444; margin-top: 15px; font-weight: bold; display: none; background: #fee2e2; padding: 10px; border-radius: 8px; }
+        
+        /* ANIMASI */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
     <div class="admin-login-overlay" id="loginOverlay">
         <div class="login-box">
-            <h2>🔒 Admin Panel</h2>
+            <div style="font-size: 3rem; margin-bottom: 10px;">👨‍🍳</div>
+            <h2 style="color:#1f2937; margin-bottom: 5px;">Login Pemilik</h2>
+            <p style="color:#6b7280; margin-bottom: 20px;">Area khusus staf dapur & kasir</p>
+            
             <div class="form-group"><input type="text" class="search-input" id="admUser" placeholder="Username"></div>
             <div class="form-group"><input type="password" class="search-input" id="admPass" placeholder="Password"></div>
-            <button class="btn btn-primary" style="width:100%;" onclick="adminLogin()">Masuk</button>
-            <div class="error-msg" id="errMsg">Salah bos!</div>
+            
+            <button class="btn btn-primary" style="width:100%; justify-content: center;" onclick="adminLogin()">Buka Dapur</button>
+            <div class="error-msg" id="errMsg">❌ Username atau Password Salah!</div>
         </div>
     </div>
 
     <div class="main-container" id="adminPanel" style="display:none;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:24px;">
-            <h2 style="color:white;">🔥 Admin Zone</h2>
-            <button onclick="adminLogout()" class="btn btn-danger btn-sm">Logout</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+            <div>
+                <h2 style="color:var(--color-text); margin-bottom: 5px;">👨‍🍳 Dapur Restoran</h2>
+                <p style="color:var(--color-text-light); font-size: 0.9rem;">Pantau pesanan & kelola menu</p>
+            </div>
+            <button onclick="adminLogout()" class="btn btn-danger btn-sm">Keluar</button>
         </div>
 
         <div class="admin-tabs">
-            <button class="tab-btn active" onclick="switchTab('orders')">📦 Pesanan</button>
-            <button class="tab-btn" onclick="switchTab('add')">➕ Tambah</button>
-            <button class="tab-btn" onclick="switchTab('manage')">🛠️ Kelola</button>
+            <button class="tab-btn active" onclick="switchTab('orders')">📦 Pesanan Masuk</button>
+            <button class="tab-btn" onclick="switchTab('add')">➕ Tambah Menu</button>
+            <button class="tab-btn" onclick="switchTab('manage')">🛠️ Kelola Menu</button>
         </div>
 
         <div id="tabOrders">
             <div id="ordersList">
-                <div class="empty-state">Menunggu pesanan...</div>
+                <div class="empty-state">
+                    <div style="font-size: 3rem;">📡</div>
+                    <p>Menunggu pesanan masuk...</p>
+                </div>
             </div>
         </div>
 
         <div id="tabAdd" style="display: none;">
-            <form onsubmit="addMenu(event)">
-                <div class="form-group"><label class="form-label">Nama</label><input type="text" class="search-input" id="mName" required></div>
-                <div class="form-group"><label class="form-label">Harga</label><input type="number" class="search-input" id="mPrice" required></div>
-                <div class="form-group">
-                    <label class="form-label">Kategori</label>
-                    <select class="search-input" id="mCat">
-                        <option value="nasi">Nasi</option>
-                        <option value="mie">Mie</option>
-                        <option value="ayam">Ayam</option>
-                        <option value="burger">Burger</option>
-                        <option value="minuman">Minuman</option>
-                    </select>
-                </div>
-                <div class="form-group"><label class="form-label">Deskripsi</label><textarea class="search-input" id="mDesc" required></textarea></div>
-                
-                <div class="form-group">
-                    <label class="form-label">Tipe Gambar</label>
-                    <div style="display:flex; gap:15px; margin-bottom:10px;">
-                        <label><input type="radio" name="imgType" value="file" checked onclick="toggleInput('file', 'Add')"> 📸 Foto</label>
-                        <label><input type="radio" name="imgType" value="emoji" onclick="toggleInput('emoji', 'Add')"> 😀 Emoji</label>
+            <div style="background: var(--color-surface); padding: 25px; border-radius: 16px; border: 1px solid var(--color-border);">
+                <form onsubmit="addMenu(event)">
+                    <div class="form-group"><label class="form-label">Nama Makanan</label><input type="text" class="search-input" id="mName" required></div>
+                    <div class="form-group"><label class="form-label">Harga (Rp)</label><input type="number" class="search-input" id="mPrice" required></div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Kategori</label>
+                        <select class="search-input" id="mCat">
+                            <option value="nasi">🍚 Nasi</option>
+                            <option value="mie">🍜 Mie</option>
+                            <option value="ayam">🍗 Ayam</option>
+                            <option value="burger">🍔 Burger</option>
+                            <option value="minuman">🥤 Minuman</option>
+                        </select>
                     </div>
                     
-                    <div id="inputGroupFileAdd">
-                        <input type="file" class="search-input" id="mImgFile" accept="image/*">
-                        <p style="font-size:0.8rem; color:orange;">*Max 700KB</p>
+                    <div class="form-group"><label class="form-label">Deskripsi</label><textarea class="search-input" id="mDesc" rows="2" required></textarea></div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Gambar Menu</label>
+                        <div style="display:flex; gap:20px; margin-bottom:15px;">
+                            <label style="cursor:pointer;"><input type="radio" name="imgType" value="file" checked onclick="toggleInput('file', 'Add')"> 📸 Upload Foto</label>
+                            <label style="cursor:pointer;"><input type="radio" name="imgType" value="emoji" onclick="toggleInput('emoji', 'Add')"> 😀 Pakai Emoji</label>
+                        </div>
+                        
+                        <div id="inputGroupFileAdd">
+                            <input type="file" class="search-input" id="mImgFile" accept="image/*">
+                            <p style="font-size:0.8rem; color:var(--color-danger); margin-top:5px;">*Wajib foto kecil (< 700KB). Screenshot dulu biar ringan.</p>
+                        </div>
+                        <div id="inputGroupEmojiAdd" style="display:none;">
+                            <input type="text" class="search-input" id="mEmojiTxt" placeholder="Contoh: 🍔 atau ☕" maxlength="10">
+                        </div>
                     </div>
-                    <div id="inputGroupEmojiAdd" style="display:none;">
-                        <input type="text" class="search-input" id="mEmojiTxt" placeholder="Contoh: 🍔" maxlength="5">
-                    </div>
-                </div>
 
-                <button type="submit" class="btn btn-primary" style="width:100%;" id="saveBtn">Simpan Menu</button>
-            </form>
-            <div id="status" style="text-align:center; margin-top:20px; font-weight:bold;"></div>
+                    <button type="submit" class="btn btn-primary" style="width:100%; justify-content: center;" id="saveBtn">Simpan Menu Baru</button>
+                </form>
+                <div id="status" style="text-align:center; margin-top:20px; font-weight:bold;"></div>
+            </div>
         </div>
 
         <div id="tabManage" style="display: none;">
             <div id="manageList">
-                <div class="empty-state">Memuat menu...</div>
+                <div class="empty-state">Sedang memuat menu...</div>
             </div>
         </div>
     </div>
@@ -109,14 +127,16 @@
     <div class="modal" id="editModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">Edit Menu</h3>
+                <h3 class="modal-title">✏️ Edit Menu</h3>
                 <button class="close-btn" onclick="closeEditModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <form onsubmit="saveEditMenu(event)">
                     <input type="hidden" id="editId">
+                    
                     <div class="form-group"><label class="form-label">Nama</label><input type="text" class="search-input" id="editName" required></div>
                     <div class="form-group"><label class="form-label">Harga</label><input type="number" class="search-input" id="editPrice" required></div>
+                    
                     <div class="form-group">
                         <label class="form-label">Kategori</label>
                         <select class="search-input" id="editCat">
@@ -127,30 +147,32 @@
                             <option value="minuman">Minuman</option>
                         </select>
                     </div>
-                    <div class="form-group"><label class="form-label">Deskripsi</label><textarea class="search-input" id="editDesc" required></textarea></div>
+                    
+                    <div class="form-group"><label class="form-label">Deskripsi</label><textarea class="search-input" id="editDesc" rows="2" required></textarea></div>
                     
                     <div class="form-group">
-                        <label class="form-label">Ganti Gambar</label>
-                        <div style="display:flex; gap:15px; margin-bottom:10px;">
+                        <label class="form-label">Ganti Gambar (Opsional)</label>
+                        <div style="display:flex; gap:20px; margin-bottom:10px;">
                             <label><input type="radio" name="editImgType" value="file" checked onclick="toggleInput('file', 'Edit')"> 📸 Foto</label>
                             <label><input type="radio" name="editImgType" value="emoji" onclick="toggleInput('emoji', 'Edit')"> 😀 Emoji</label>
                         </div>
+                        
                         <div id="inputGroupFileEdit">
                             <input type="file" class="search-input" id="editImgFile" accept="image/*">
                         </div>
                         <div id="inputGroupEmojiEdit" style="display:none;">
-                            <input type="text" class="search-input" id="editEmojiTxt" placeholder="Emoji baru..." maxlength="5">
+                            <input type="text" class="search-input" id="editEmojiTxt" placeholder="Emoji baru...">
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary" style="width:100%;" id="editSaveBtn">Update Menu</button>
+                    <button type="submit" class="btn btn-primary" style="width:100%; justify-content: center;" id="editSaveBtn">Update Menu</button>
                 </form>
             </div>
         </div>
     </div>
 
     <script>
-        // CONFIG
+        // --- 1. KONFIGURASI FIREBASE ---
         const firebaseConfig = {
             apiKey: "AIzaSyBDJO_Lsro9IpkXU1ducHRwZHKc5kH6GVQ",
             authDomain: "pemesan-makanan-online.firebaseapp.com",
@@ -166,8 +188,7 @@
         const db = firebase.database();
         let menuCache = {};
 
-        // --- [PERBAIKAN UTAMA DI SINI] ---
-        // Cek Kunci 'isAdminLoggedIn' (bukan 'isAdmin' saja)
+        // --- 2. SISTEM LOGIN ---
         if(sessionStorage.getItem('isAdminLoggedIn') === 'true') {
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
@@ -177,8 +198,8 @@
         function adminLogin() {
             const u = document.getElementById('admUser').value;
             const p = document.getElementById('admPass').value;
+            
             if(u === 'admin' && p === '12345') {
-                // Simpan kunci yang BENAR
                 sessionStorage.setItem('isAdminLoggedIn', 'true'); 
                 location.reload();
             } else {
@@ -187,21 +208,28 @@
         }
 
         function adminLogout() {
-            // Hapus kunci yang BENAR
             sessionStorage.removeItem('isAdminLoggedIn'); 
             window.location.href = 'index.html';
         }
 
-        // UTILS
+        // --- 3. LOGIKA NAVIGASI ---
         function switchTab(tab) {
             document.getElementById('tabOrders').style.display = 'none';
             document.getElementById('tabAdd').style.display = 'none';
             document.getElementById('tabManage').style.display = 'none';
+            
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             
-            if(tab === 'orders') { document.getElementById('tabOrders').style.display = 'block'; document.querySelectorAll('.tab-btn')[0].classList.add('active'); }
-            else if(tab === 'add') { document.getElementById('tabAdd').style.display = 'block'; document.querySelectorAll('.tab-btn')[1].classList.add('active'); }
-            else { document.getElementById('tabManage').style.display = 'block'; document.querySelectorAll('.tab-btn')[2].classList.add('active'); }
+            if(tab === 'orders') {
+                document.getElementById('tabOrders').style.display = 'block';
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            } else if(tab === 'add') {
+                document.getElementById('tabAdd').style.display = 'block';
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            } else {
+                document.getElementById('tabManage').style.display = 'block';
+                document.querySelectorAll('.tab-btn')[2].classList.add('active');
+            }
         }
 
         function toggleInput(type, mode) {
@@ -209,21 +237,77 @@
             document.getElementById('inputGroupEmoji'+mode).style.display = (type === 'emoji') ? 'block' : 'none';
         }
 
-        function initListeners() { listenOrders(); listenMenu(); }
+        function initListeners() {
+            listenOrders();
+            listenMenu();
+        }
 
-        // 1. TAMBAH MENU
+        // --- 4. FITUR PESANAN MASUK ---
+        function listenOrders() {
+            db.ref('orders').on('value', snap => {
+                const data = snap.val();
+                const div = document.getElementById('ordersList');
+                div.innerHTML = '';
+                
+                if(data) {
+                    const orders = Object.keys(data).map(k => ({id: k, ...data[k]})).reverse();
+                    orders.forEach(o => {
+                        let items = o.items.map(i => `<div>${i.quantity || i.qty}x ${i.name}</div>`).join('');
+                        
+                        // Warna Status
+                        let statusStyle = 'background:#333; color:gold;';
+                        if(o.status === 'Diproses') statusStyle = 'background:#0d9488; color:white;';
+                        if(o.status === 'Selesai') statusStyle = 'background:#1f2937; color:#9ca3af;';
+
+                        div.innerHTML += `
+                            <div class="order-card">
+                                <div class="order-header">
+                                    <div>
+                                        <div style="font-weight:bold; color:var(--color-text); font-size:1.1rem;">${o.buyerName}</div>
+                                        <div style="font-size:0.8rem; color:var(--color-text-light);">${o.dateReadable || 'Baru saja'}</div>
+                                        <div style="font-size:0.9rem; color:var(--color-text-light); margin-top:5px;">📍 ${o.address}</div>
+                                    </div>
+                                    <div class="order-status" style="${statusStyle}">${o.status}</div>
+                                </div>
+                                <div style="margin-bottom:15px; color:var(--color-text); border-bottom:1px dashed var(--color-border); padding-bottom:10px;">
+                                    ${items}
+                                </div>
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <div style="font-weight:800; color:var(--color-primary); font-size:1.2rem;">Rp ${o.total.toLocaleString('id-ID')}</div>
+                                    <div style="display:flex; gap:5px;">
+                                        ${o.status === 'Menunggu Konfirmasi' ? `<button class="btn btn-primary btn-sm" onclick="updStatus('${o.id}','Diproses')">Terima</button>` : ''}
+                                        ${o.status === 'Diproses' ? `<button class="btn btn-secondary btn-sm" onclick="updStatus('${o.id}','Selesai')">Selesai</button>` : ''}
+                                        <button class="btn btn-danger btn-sm" onclick="delOrder('${o.id}')">Hapus</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else { 
+                    div.innerHTML = `
+                        <div class="empty-state">
+                            <div style="font-size:3rem; margin-bottom:10px;">🍽️</div>
+                            <p>Belum ada pesanan masuk.</p>
+                        </div>`; 
+                }
+            });
+        }
+        function updStatus(id, s) { db.ref('orders/'+id).update({status: s}); }
+        function delOrder(id) { if(confirm('Hapus riwayat pesanan ini?')) db.ref('orders/'+id).remove(); }
+
+        // --- 5. FITUR TAMBAH MENU ---
         function addMenu(e) {
             e.preventDefault();
             const btn = document.getElementById('saveBtn');
             const status = document.getElementById('status');
             const type = document.querySelector('input[name="imgType"]:checked').value;
             
-            btn.disabled = true; btn.textContent = "Memproses...";
+            btn.disabled = true; btn.textContent = "Memproses Data...";
 
             if (type === 'file') {
                 const file = document.getElementById('mImgFile').files[0];
-                if(!file) { alert("Pilih foto!"); btn.disabled=false; return; }
-                if(file.size > 700000) { alert("File terlalu besar!"); btn.disabled=false; return; }
+                if(!file) { alert("Pilih foto dulu!"); btn.disabled=false; return; }
+                if(file.size > 700000) { alert("❌ Foto terlalu besar! Max 700KB. Gunakan screenshot."); btn.disabled=false; return; }
 
                 const reader = new FileReader();
                 reader.onload = function(evt) { saveToDb(evt.target.result); };
@@ -244,15 +328,50 @@
                     rating: 5.0, deliveryTime: '20m'
                 };
                 db.ref('menu_items').push(data).then(() => {
-                    status.textContent = "✅ Berhasil!"; status.style.color = "green";
+                    status.textContent = "✅ Menu Berhasil Ditambahkan!";
+                    status.style.color = "green";
                     document.querySelector('form').reset();
-                    btn.disabled = false; btn.textContent = "Simpan Menu";
+                    btn.disabled = false; btn.textContent = "Simpan Menu Baru";
                     setTimeout(() => switchTab('manage'), 1000);
                 });
             }
         }
 
-        // 2. EDIT MENU
+        // --- 6. FITUR KELOLA MENU ---
+        function listenMenu() {
+            db.ref('menu_items').on('value', snap => {
+                const data = snap.val();
+                menuCache = data || {};
+                const div = document.getElementById('manageList');
+                div.innerHTML = '';
+                
+                if(data) {
+                    Object.keys(data).forEach(k => {
+                        const m = data[k];
+                        // Cek Gambar vs Emoji
+                        let thumb = (m.image.startsWith('data:') || m.image.startsWith('http')) 
+                            ? `<img src="${m.image}" class="manage-thumb">` 
+                            : `<div class="manage-thumb">${m.image}</div>`;
+                        
+                        div.innerHTML += `
+                            <div class="manage-item">
+                                ${thumb}
+                                <div class="manage-info">
+                                    <div style="font-weight:bold; color:var(--color-text);">${m.name}</div>
+                                    <div style="font-size:0.8rem; color:var(--color-text-light);">Rp ${m.price.toLocaleString()} | ${m.category}</div>
+                                </div>
+                                <div class="manage-actions">
+                                    <button class="btn btn-secondary btn-sm" onclick="openEditModal('${k}')">✏️</button>
+                                    <button class="btn btn-danger btn-sm" onclick="delMenu('${k}', '${m.name}')">🗑️</button>
+                                </div>
+                            </div>`;
+                    });
+                } else { div.innerHTML = '<div class="empty-state">Menu kosong.</div>'; }
+            });
+        }
+        function delMenu(id, name) { if(confirm(`Hapus menu "${name}"?`)) db.ref('menu_items/'+id).remove(); }
+
+        // --- 7. FITUR EDIT MENU ---
         function openEditModal(id) {
             const item = menuCache[id];
             if(!item) return;
@@ -283,7 +402,7 @@
             };
 
             if (type === 'file' && file) {
-                if(file.size > 700000) { alert("File besar!"); btn.disabled=false; return; }
+                if(file.size > 700000) { alert("Foto terlalu besar!"); btn.disabled=false; return; }
                 const reader = new FileReader();
                 reader.onload = function(evt) { updates.image = evt.target.result; pushUpdate(id, updates, btn); };
                 reader.readAsDataURL(file);
@@ -296,68 +415,11 @@
 
         function pushUpdate(id, data, btn) {
             db.ref('menu_items/' + id).update(data).then(() => {
-                alert("✅ Updated!"); closeEditModal();
+                alert("✅ Menu Berhasil Diupdate!");
+                closeEditModal();
                 btn.disabled = false; btn.textContent = "Update Menu";
             });
         }
-
-        // 3. LISTENERS
-        function listenOrders() {
-            db.ref('orders').on('value', snap => {
-                const data = snap.val();
-                const list = document.getElementById('ordersList');
-                list.innerHTML = '';
-                if(data) {
-                    Object.keys(data).reverse().forEach(k => {
-                        const o = {id: k, ...data[k]};
-                        let items = o.items.map(i => `<div>${i.qty}x ${i.name}</div>`).join('');
-                        list.innerHTML += `
-                            <div class="order-card">
-                                <div class="order-header">
-                                    <div><div style="font-weight:bold;color:white;">${o.buyerName}</div><div style="font-size:0.8rem;color:#ccc;">${o.dateReadable}</div></div>
-                                    <div class="order-status">${o.status}</div>
-                                </div>
-                                <div style="margin-bottom:10px;color:#ddd;">${items}</div>
-                                <div style="font-weight:bold;color:var(--color-primary);text-align:right;">Rp ${o.total.toLocaleString()}</div>
-                                <div style="text-align:right;margin-top:10px;">
-                                    ${o.status === 'Menunggu Konfirmasi' ? `<button class="btn btn-primary btn-sm" onclick="updStatus('${o.id}','Diproses')">Terima</button>` : ''}
-                                    <button class="btn btn-danger btn-sm" onclick="delOrder('${o.id}')">Hapus</button>
-                                </div>
-                            </div>`;
-                    });
-                } else { list.innerHTML = '<div class="empty-state">Kosong.</div>'; }
-            });
-        }
-        function updStatus(id, s) { db.ref('orders/'+id).update({status: s}); }
-        function delOrder(id) { if(confirm('Hapus?')) db.ref('orders/'+id).remove(); }
-
-        function listenMenu() {
-            db.ref('menu_items').on('value', snap => {
-                const data = snap.val();
-                menuCache = data || {};
-                const list = document.getElementById('manageList');
-                list.innerHTML = '';
-                if(data) {
-                    Object.keys(data).forEach(k => {
-                        const m = data[k];
-                        let thumb = (m.image.startsWith('data:') || m.image.startsWith('http')) ? `<img src="${m.image}" class="manage-thumb">` : `<div class="manage-thumb">${m.image}</div>`;
-                        list.innerHTML += `
-                            <div class="manage-item">
-                                ${thumb}
-                                <div class="manage-info">
-                                    <div style="font-weight:bold;color:var(--color-text);">${m.name}</div>
-                                    <div style="font-size:0.8rem;color:var(--color-text-light);">Rp ${m.price.toLocaleString()}</div>
-                                </div>
-                                <div class="manage-actions">
-                                    <button class="btn btn-secondary btn-sm" onclick="openEditModal('${k}')">✏️</button>
-                                    <button class="btn btn-danger btn-sm" onclick="delMenu('${k}', '${m.name}')">🗑️</button>
-                                </div>
-                            </div>`;
-                    });
-                } else { list.innerHTML = '<div class="empty-state">Menu kosong.</div>'; }
-            });
-        }
-        function delMenu(id, name) { if(confirm(`Hapus "${name}"?`)) db.ref('menu_items/'+id).remove(); }
         
         window.onclick = function(e) { if(e.target.classList.contains('modal')) e.target.classList.remove('active'); }
     </script>
