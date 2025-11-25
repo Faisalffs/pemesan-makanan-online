@@ -3,36 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Restoran</title> <link rel="stylesheet" href="style.css">
+    <title>Dashboard Restoran</title> 
+    <link rel="stylesheet" href="style.css">
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
     <style>
+        /* CSS Tambahan untuk Admin Dashboard */
+        
         /* TAB NAVIGASI */
-        .admin-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--color-border); padding-bottom: 10px; overflow-x: auto; }
-        .tab-btn { background: none; border: none; color: var(--color-text-light); font-weight: bold; cursor: pointer; padding: 10px; font-size: 0.9rem; white-space: nowrap; transition: 0.3s; }
-        .tab-btn:hover { color: var(--color-primary); }
-        .tab-btn.active { color: var(--color-primary); border-bottom: 3px solid var(--color-primary); }
+        .admin-tabs { 
+            display: flex; 
+            gap: 15px; 
+            margin-bottom: 30px; 
+            border-bottom: 2px solid var(--color-border); 
+            padding-bottom: 10px; 
+            overflow-x: auto; 
+        }
+        .tab-btn { 
+            background: none; 
+            border: none; 
+            color: var(--color-text-light); 
+            font-weight: 600; 
+            cursor: pointer; 
+            padding: 10px; 
+            font-size: 1rem; 
+            white-space: nowrap; 
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .tab-btn:hover { 
+            color: var(--color-secondary); 
+        }
+        .tab-btn.active { 
+            color: var(--color-primary); 
+            border-bottom: 3px solid var(--color-primary); 
+            transform: translateY(2px);
+        }
 
         /* KARTU PESANAN */
-        .order-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow-soft); border-left: 5px solid var(--color-primary); animation: fadeIn 0.5s; }
-        .order-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; border-bottom: 1px solid var(--color-border); padding-bottom: 10px; }
-        .order-status { background: #333; color: gold; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; letter-spacing: 0.5px; }
+        .order-card { 
+            background: var(--color-surface); 
+            border: 1px solid var(--color-border); 
+            border-radius: 12px; 
+            padding: 25px; 
+            margin-bottom: 20px; 
+            box-shadow: var(--shadow-soft); 
+            border-left: 5px solid var(--color-secondary); 
+            transition: border-left-color 0.3s;
+            animation: fadeIn 0.5s; 
+        }
+        .order-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start; 
+            margin-bottom: 15px; 
+            border-bottom: 1px solid var(--color-border); 
+            padding-bottom: 10px; 
+        }
+        .order-status { 
+            padding: 6px 12px; 
+            border-radius: 20px; 
+            font-size: 0.8rem; 
+            font-weight: bold; 
+            letter-spacing: 0.5px; 
+        }
 
-        /* LIST MENU (UNTUK DIEDIT) */
-        .manage-item { display: flex; gap: 15px; background: var(--color-surface); padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid var(--color-border); align-items: center; transition: 0.2s; }
-        .manage-item:hover { transform: translateX(5px); border-color: var(--color-primary); }
-        .manage-thumb { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 30px; }
-        .manage-info { flex: 1; }
-        .manage-actions { display: flex; gap: 8px; }
+        /* LIST MENU (KELOLA) */
+        .manage-item { 
+            display: flex; 
+            gap: 20px; 
+            background: var(--color-surface); 
+            padding: 18px; 
+            border-radius: 12px; 
+            margin-bottom: 15px; 
+            border: 1px solid var(--color-border); 
+            align-items: center; 
+            transition: all 0.2s; 
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .manage-item:hover { 
+            transform: translateX(8px); 
+            border-color: var(--color-primary); 
+        }
+        .manage-thumb { 
+            width: 70px; 
+            height: 70px; 
+            border-radius: 8px; 
+            object-fit: cover; 
+            background: var(--color-bg); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 35px;
+            overflow: hidden;
+        }
+        .manage-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .manage-info { 
+            flex: 1; 
+        }
+        .manage-actions { 
+            display: flex; 
+            gap: 10px; 
+            flex-shrink: 0;
+        }
         
         /* LOGIN OVERLAY */
-        .admin-login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111827; display: flex; justify-content: center; align-items: center; z-index: 9999; }
-        .login-box { background: white; padding: 40px; border-radius: 16px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-        .error-msg { color: #ef4444; margin-top: 15px; font-weight: bold; display: none; background: #fee2e2; padding: 10px; border-radius: 8px; }
+        .admin-login-overlay { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: var(--color-bg); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 9999; 
+        }
+        .login-box { 
+            background: var(--color-surface); 
+            padding: 50px 40px; 
+            border-radius: 16px; 
+            width: 90%; 
+            max-width: 400px; 
+            text-align: center; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5); 
+            border: 2px solid var(--color-primary);
+        }
+        .error-msg { 
+            color: var(--color-danger); 
+            margin-top: 20px; 
+            font-weight: bold; 
+            display: none; 
+            background: rgba(239, 68, 68, 0.1); 
+            padding: 10px; 
+            border-radius: 8px; 
+        }
         
-        /* ANIMASI */
+        /* MODAL KHUSUS ADMIN */
+        .modal-content {
+            max-height: 90vh; 
+            overflow-y: auto;
+        }
+        #editModal .modal-content {
+            max-width: 550px;
+        }
+        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -40,9 +163,9 @@
 
     <div class="admin-login-overlay" id="loginOverlay">
         <div class="login-box">
-            <div style="font-size: 3rem; margin-bottom: 10px;">👨‍🍳</div>
-            <h2 style="color:#1f2937; margin-bottom: 5px;">Login Pemilik</h2>
-            <p style="color:#6b7280; margin-bottom: 20px;">Area khusus staf dapur & kasir</p>
+            <div style="font-size: 3.5rem; margin-bottom: 15px;">👨‍🍳</div>
+            <h2 style="color:var(--color-text); margin-bottom: 10px;">Login Pemilik Restoran</h2>
+            <p style="color:var(--color-text-light); margin-bottom: 30px;">Area khusus staf dapur & kasir</p>
             
             <div class="form-group"><input type="text" class="search-input" id="admUser" placeholder="Username"></div>
             <div class="form-group"><input type="password" class="search-input" id="admPass" placeholder="Password"></div>
@@ -53,7 +176,7 @@
     </div>
 
     <div class="main-container" id="adminPanel" style="display:none;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; padding-top: 15px;">
             <div>
                 <h2 style="color:var(--color-text); margin-bottom: 5px;">👨‍🍳 Dapur Restoran</h2>
                 <p style="color:var(--color-text-light); font-size: 0.9rem;">Pantau pesanan & kelola menu</p>
@@ -62,22 +185,28 @@
         </div>
 
         <div class="admin-tabs">
-            <button class="tab-btn active" onclick="switchTab('orders')">📦 Pesanan Masuk</button>
+            <button class="tab-btn active" onclick="switchTab('orders')">📦 Pesanan Aktif</button>
+            <button class="tab-btn" onclick="switchTab('history')">✅ Riwayat Selesai</button>
             <button class="tab-btn" onclick="switchTab('add')">➕ Tambah Menu</button>
             <button class="tab-btn" onclick="switchTab('manage')">🛠️ Kelola Menu</button>
         </div>
 
         <div id="tabOrders">
-            <div id="ordersList">
-                <div class="empty-state">
-                    <div style="font-size: 3rem;">📡</div>
-                    <p>Menunggu pesanan masuk...</p>
-                </div>
+            <h3 style="margin-top: 10px; color: var(--color-primary);">Semua Pesanan yang Perlu Diproses</h3>
+            <div id="ordersListActive">
+                <div class="empty-state">Sedang memuat pesanan aktif...</div>
+            </div>
+        </div>
+        
+        <div id="tabHistory" style="display: none;">
+            <h3 style="margin-top: 10px; color: var(--color-secondary);">Riwayat Semua Pesanan yang Sudah Selesai</h3>
+            <div id="ordersListCompleted">
+                <div class="empty-state">Sedang memuat riwayat selesai...</div>
             </div>
         </div>
 
         <div id="tabAdd" style="display: none;">
-            <div style="background: var(--color-surface); padding: 25px; border-radius: 16px; border: 1px solid var(--color-border);">
+            <div style="background: var(--color-surface); padding: 30px; border-radius: 16px; border: 1px solid var(--color-border);">
                 <form onsubmit="addMenu(event)">
                     <div class="form-group"><label class="form-label">Nama Makanan</label><input type="text" class="search-input" id="mName" required></div>
                     <div class="form-group"><label class="form-label">Harga (Rp)</label><input type="number" class="search-input" id="mPrice" required></div>
@@ -93,7 +222,7 @@
                         </select>
                     </div>
                     
-                    <div class="form-group"><label class="form-label">Deskripsi</label><textarea class="search-input" id="mDesc" rows="2" required></textarea></div>
+                    <div class="form-group"><label class="form-label">Deskripsi</label><textarea type="text" class="search-input" id="mDesc" rows="3" required></textarea></div>
                     
                     <div class="form-group">
                         <label class="form-label">Gambar Menu</label>
@@ -104,7 +233,7 @@
                         
                         <div id="inputGroupFileAdd">
                             <input type="file" class="search-input" id="mImgFile" accept="image/*">
-                            <p style="font-size:0.8rem; color:var(--color-danger); margin-top:5px;">*Wajib foto kecil (< 700KB). Screenshot dulu biar ringan.</p>
+                            <p style="font-size:0.8rem; color:var(--color-danger); margin-top:5px;">*Wajib foto kecil (< 700KB). Gunakan Screenshot/Optimizer.</p>
                         </div>
                         <div id="inputGroupEmojiAdd" style="display:none;">
                             <input type="text" class="search-input" id="mEmojiTxt" placeholder="Contoh: 🍔 atau ☕" maxlength="10">
@@ -171,257 +300,6 @@
         </div>
     </div>
 
-    <script>
-        // --- 1. KONFIGURASI FIREBASE ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyBDJO_Lsro9IpkXU1ducHRwZHKc5kH6GVQ",
-            authDomain: "pemesan-makanan-online.firebaseapp.com",
-            projectId: "pemesan-makanan-online",
-            storageBucket: "pemesan-makanan-online.firebasestorage.app",
-            messagingSenderId: "248955086378",
-            appId: "1:248955086378:web:c989826a8a78d0c9dfc553",
-            measurementId: "G-E2XHCSEWEC",
-            databaseURL: "https://pemesan-makanan-online-default-rtdb.asia-southeast1.firebasedatabase.app"
-        };
-
-        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-        const db = firebase.database();
-        let menuCache = {};
-
-        // --- 2. SISTEM LOGIN ---
-        if(sessionStorage.getItem('isAdminLoggedIn') === 'true') {
-            document.getElementById('loginOverlay').style.display = 'none';
-            document.getElementById('adminPanel').style.display = 'block';
-            initListeners();
-        }
-
-        function adminLogin() {
-            const u = document.getElementById('admUser').value;
-            const p = document.getElementById('admPass').value;
-            
-            if(u === 'admin' && p === '12345') {
-                sessionStorage.setItem('isAdminLoggedIn', 'true'); 
-                location.reload();
-            } else {
-                document.getElementById('errMsg').style.display = 'block';
-            }
-        }
-
-        function adminLogout() {
-            sessionStorage.removeItem('isAdminLoggedIn'); 
-            window.location.href = 'index.html';
-        }
-
-        // --- 3. LOGIKA NAVIGASI ---
-        function switchTab(tab) {
-            document.getElementById('tabOrders').style.display = 'none';
-            document.getElementById('tabAdd').style.display = 'none';
-            document.getElementById('tabManage').style.display = 'none';
-            
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            
-            if(tab === 'orders') {
-                document.getElementById('tabOrders').style.display = 'block';
-                document.querySelectorAll('.tab-btn')[0].classList.add('active');
-            } else if(tab === 'add') {
-                document.getElementById('tabAdd').style.display = 'block';
-                document.querySelectorAll('.tab-btn')[1].classList.add('active');
-            } else {
-                document.getElementById('tabManage').style.display = 'block';
-                document.querySelectorAll('.tab-btn')[2].classList.add('active');
-            }
-        }
-
-        function toggleInput(type, mode) {
-            document.getElementById('inputGroupFile'+mode).style.display = (type === 'file') ? 'block' : 'none';
-            document.getElementById('inputGroupEmoji'+mode).style.display = (type === 'emoji') ? 'block' : 'none';
-        }
-
-        function initListeners() {
-            listenOrders();
-            listenMenu();
-        }
-
-        // --- 4. FITUR PESANAN MASUK ---
-        function listenOrders() {
-            db.ref('orders').on('value', snap => {
-                const data = snap.val();
-                const div = document.getElementById('ordersList');
-                div.innerHTML = '';
-                
-                if(data) {
-                    const orders = Object.keys(data).map(k => ({id: k, ...data[k]})).reverse();
-                    orders.forEach(o => {
-                        let items = o.items.map(i => `<div>${i.quantity || i.qty}x ${i.name}</div>`).join('');
-                        
-                        // Warna Status
-                        let statusStyle = 'background:#333; color:gold;';
-                        if(o.status === 'Diproses') statusStyle = 'background:#0d9488; color:white;';
-                        if(o.status === 'Selesai') statusStyle = 'background:#1f2937; color:#9ca3af;';
-
-                        div.innerHTML += `
-                            <div class="order-card">
-                                <div class="order-header">
-                                    <div>
-                                        <div style="font-weight:bold; color:var(--color-text); font-size:1.1rem;">${o.buyerName}</div>
-                                        <div style="font-size:0.8rem; color:var(--color-text-light);">${o.dateReadable || 'Baru saja'}</div>
-                                        <div style="font-size:0.9rem; color:var(--color-text-light); margin-top:5px;">📍 ${o.address}</div>
-                                    </div>
-                                    <div class="order-status" style="${statusStyle}">${o.status}</div>
-                                </div>
-                                <div style="margin-bottom:15px; color:var(--color-text); border-bottom:1px dashed var(--color-border); padding-bottom:10px;">
-                                    ${items}
-                                </div>
-                                <div style="display:flex; justify-content:space-between; align-items:center;">
-                                    <div style="font-weight:800; color:var(--color-primary); font-size:1.2rem;">Rp ${o.total.toLocaleString('id-ID')}</div>
-                                    <div style="display:flex; gap:5px;">
-                                        ${o.status === 'Menunggu Konfirmasi' ? `<button class="btn btn-primary btn-sm" onclick="updStatus('${o.id}','Diproses')">Terima</button>` : ''}
-                                        ${o.status === 'Diproses' ? `<button class="btn btn-secondary btn-sm" onclick="updStatus('${o.id}','Selesai')">Selesai</button>` : ''}
-                                        <button class="btn btn-danger btn-sm" onclick="delOrder('${o.id}')">Hapus</button>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                } else { 
-                    div.innerHTML = `
-                        <div class="empty-state">
-                            <div style="font-size:3rem; margin-bottom:10px;">🍽️</div>
-                            <p>Belum ada pesanan masuk.</p>
-                        </div>`; 
-                }
-            });
-        }
-        function updStatus(id, s) { db.ref('orders/'+id).update({status: s}); }
-        function delOrder(id) { if(confirm('Hapus riwayat pesanan ini?')) db.ref('orders/'+id).remove(); }
-
-        // --- 5. FITUR TAMBAH MENU ---
-        function addMenu(e) {
-            e.preventDefault();
-            const btn = document.getElementById('saveBtn');
-            const status = document.getElementById('status');
-            const type = document.querySelector('input[name="imgType"]:checked').value;
-            
-            btn.disabled = true; btn.textContent = "Memproses Data...";
-
-            if (type === 'file') {
-                const file = document.getElementById('mImgFile').files[0];
-                if(!file) { alert("Pilih foto dulu!"); btn.disabled=false; return; }
-                if(file.size > 700000) { alert("❌ Foto terlalu besar! Max 700KB. Gunakan screenshot."); btn.disabled=false; return; }
-
-                const reader = new FileReader();
-                reader.onload = function(evt) { saveToDb(evt.target.result); };
-                reader.readAsDataURL(file);
-            } else {
-                const emoji = document.getElementById('mEmojiTxt').value;
-                if(!emoji) { alert("Isi emoji!"); btn.disabled=false; return; }
-                saveToDb(emoji);
-            }
-
-            function saveToDb(img) {
-                const data = {
-                    name: document.getElementById('mName').value,
-                    price: parseInt(document.getElementById('mPrice').value),
-                    category: document.getElementById('mCat').value,
-                    description: document.getElementById('mDesc').value,
-                    image: img,
-                    rating: 5.0, deliveryTime: '20m'
-                };
-                db.ref('menu_items').push(data).then(() => {
-                    status.textContent = "✅ Menu Berhasil Ditambahkan!";
-                    status.style.color = "green";
-                    document.querySelector('form').reset();
-                    btn.disabled = false; btn.textContent = "Simpan Menu Baru";
-                    setTimeout(() => switchTab('manage'), 1000);
-                });
-            }
-        }
-
-        // --- 6. FITUR KELOLA MENU ---
-        function listenMenu() {
-            db.ref('menu_items').on('value', snap => {
-                const data = snap.val();
-                menuCache = data || {};
-                const div = document.getElementById('manageList');
-                div.innerHTML = '';
-                
-                if(data) {
-                    Object.keys(data).forEach(k => {
-                        const m = data[k];
-                        // Cek Gambar vs Emoji
-                        let thumb = (m.image.startsWith('data:') || m.image.startsWith('http')) 
-                            ? `<img src="${m.image}" class="manage-thumb">` 
-                            : `<div class="manage-thumb">${m.image}</div>`;
-                        
-                        div.innerHTML += `
-                            <div class="manage-item">
-                                ${thumb}
-                                <div class="manage-info">
-                                    <div style="font-weight:bold; color:var(--color-text);">${m.name}</div>
-                                    <div style="font-size:0.8rem; color:var(--color-text-light);">Rp ${m.price.toLocaleString()} | ${m.category}</div>
-                                </div>
-                                <div class="manage-actions">
-                                    <button class="btn btn-secondary btn-sm" onclick="openEditModal('${k}')">✏️</button>
-                                    <button class="btn btn-danger btn-sm" onclick="delMenu('${k}', '${m.name}')">🗑️</button>
-                                </div>
-                            </div>`;
-                    });
-                } else { div.innerHTML = '<div class="empty-state">Menu kosong.</div>'; }
-            });
-        }
-        function delMenu(id, name) { if(confirm(`Hapus menu "${name}"?`)) db.ref('menu_items/'+id).remove(); }
-
-        // --- 7. FITUR EDIT MENU ---
-        function openEditModal(id) {
-            const item = menuCache[id];
-            if(!item) return;
-            document.getElementById('editId').value = id;
-            document.getElementById('editName').value = item.name;
-            document.getElementById('editPrice').value = item.price;
-            document.getElementById('editCat').value = item.category;
-            document.getElementById('editDesc').value = item.description;
-            document.getElementById('editModal').classList.add('active');
-        }
-        function closeEditModal() { document.getElementById('editModal').classList.remove('active'); }
-
-        function saveEditMenu(e) {
-            e.preventDefault();
-            const id = document.getElementById('editId').value;
-            const btn = document.getElementById('editSaveBtn');
-            const type = document.querySelector('input[name="editImgType"]:checked').value;
-            const file = document.getElementById('editImgFile').files[0];
-            const emoji = document.getElementById('editEmojiTxt').value;
-
-            btn.disabled = true; btn.textContent = "Updating...";
-
-            let updates = {
-                name: document.getElementById('editName').value,
-                price: parseInt(document.getElementById('editPrice').value),
-                category: document.getElementById('editCat').value,
-                description: document.getElementById('editDesc').value
-            };
-
-            if (type === 'file' && file) {
-                if(file.size > 700000) { alert("Foto terlalu besar!"); btn.disabled=false; return; }
-                const reader = new FileReader();
-                reader.onload = function(evt) { updates.image = evt.target.result; pushUpdate(id, updates, btn); };
-                reader.readAsDataURL(file);
-            } else if (type === 'emoji' && emoji) {
-                updates.image = emoji; pushUpdate(id, updates, btn);
-            } else {
-                pushUpdate(id, updates, btn);
-            }
-        }
-
-        function pushUpdate(id, data, btn) {
-            db.ref('menu_items/' + id).update(data).then(() => {
-                alert("✅ Menu Berhasil Diupdate!");
-                closeEditModal();
-                btn.disabled = false; btn.textContent = "Update Menu";
-            });
-        }
-        
-        window.onclick = function(e) { if(e.target.classList.contains('modal')) e.target.classList.remove('active'); }
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
