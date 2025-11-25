@@ -1,4 +1,5 @@
-// --- 1. FIREBASE CONFIG ---
+// --- 1. FIREBASE CONFIGURATION ---
+// (Pastikan URL ini SAMA PERSIS dengan yang di admin.html)
 const firebaseConfig = {
     apiKey: "AIzaSyBDJO_Lsro9IpkXU1ducHRwZHKc5kH6GVQ",
     authDomain: "pemesan-makanan-online.firebaseapp.com",
@@ -13,7 +14,7 @@ const firebaseConfig = {
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const database = firebase.database();
 
-// --- 2. STATE ---
+// --- 2. GLOBAL VARIABLES ---
 let menuData = [];
 let cart = [];
 let currentCategory = 'all';
@@ -25,20 +26,21 @@ window.onload = function() {
     fetchMenuFromFirebase();
 };
 
-// --- 4. MENU LOGIC ---
+// --- 4. MENU LOGIC (BAGIAN YANG DIPERBAIKI) ---
 function fetchMenuFromFirebase() {
     const menuRef = database.ref('menu_items');
     menuRef.on('value', (snapshot) => {
         const data = snapshot.val();
         menuData = []; 
         const grid = document.getElementById('menuGrid');
+        
         if (data) {
             Object.keys(data).forEach(key => {
                 menuData.push({ id: key, ...data[key] });
             });
             renderMenu();
         } else {
-            grid.innerHTML = '<div class="empty-state">Belum ada menu.</div>';
+            grid.innerHTML = '<div class="empty-state">Belum ada menu tersedia.</div>';
         }
     });
 }
@@ -54,19 +56,31 @@ function renderMenu() {
     });
 
     if (filtered.length === 0) {
-        grid.innerHTML = '<div class="empty-state">Tidak ditemukan 😢</div>';
+        grid.innerHTML = '<div class="empty-state">Menu tidak ditemukan 😢</div>';
         return;
     }
 
-    grid.innerHTML = filtered.map(item => `
+    grid.innerHTML = filtered.map(item => {
+        // --- LOGIKA DETEKSI GAMBAR ---
+        // Cek apakah ini Foto (Base64/URL) atau Emoji Biasa
+        let imageHTML = '';
+        if (item.image.startsWith('data:image') || item.image.startsWith('http')) {
+            // Ini Foto
+            imageHTML = `<img src="${item.image}" alt="${item.name}" style="width:100%; height:100%; object-fit:cover;">`;
+        } else {
+            // Ini Emoji
+            imageHTML = item.image;
+        }
+
+        return `
         <div class="menu-card">
-            <div class="menu-img">${item.image}</div>
+            <div class="menu-img">${imageHTML}</div>
             <div class="menu-content">
                 <h3 class="menu-title">${item.name}</h3>
                 <p class="menu-desc">${item.description}</p>
                 <div class="menu-meta">
-                    <span class="rating">★ ${item.rating || 5.0}</span>
-                    <span>🕒 ${item.deliveryTime || '20m'}</span>
+                    <div class="rating">★ ${item.rating || 5.0}</div>
+                    <div>🕒 ${item.deliveryTime || '20m'}</div>
                 </div>
                 <div class="menu-footer">
                     <div class="price">Rp ${item.price.toLocaleString('id-ID')}</div>
@@ -74,7 +88,8 @@ function renderMenu() {
                 </div>
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function filterCategory(cat) {
@@ -93,22 +108,22 @@ function addToCart(id) {
     const item = menuData.find(m => m.id === id);
     if (!item) return;
     const exist = cart.find(c => c.id === id);
-    if(exist) exist.qty++; else cart.push({ ...item, qty: 1 });
+    if(exist) exist.quantity++; else cart.push({...item, quantity: 1});
     updateCartUI();
-    showNotification(`✅ ${item.name} masuk keranjang`);
+    showNotification(`✅ ${item.name} masuk keranjang!`);
 }
 
 function updateQuantity(id, change) {
     const item = cart.find(c => c.id === id);
     if(item) {
-        item.qty += change;
-        if(item.qty <= 0) cart = cart.filter(c => c.id !== id);
+        item.quantity += change;
+        if(item.quantity <= 0) cart = cart.filter(c => c.id !== id);
         updateCartUI(); renderCartList();
     }
 }
 
 function updateCartUI() {
-    document.getElementById('cartBadge').textContent = cart.reduce((sum, i) => sum + i.qty, 0);
+    document.getElementById('cartBadge').textContent = cart.reduce((sum, i) => sum + i.quantity, 0);
 }
 
 function openCart() { renderCartList(); document.getElementById('cartModal').classList.add('active'); }
@@ -118,36 +133,34 @@ function renderCartList() {
     const container = document.getElementById('cartItems');
     const summary = document.getElementById('cartSummary');
     if(cart.length === 0) {
-        container.innerHTML = '<div class="empty-state">Keranjang kosong</div>';
+        container.innerHTML = '<div class="empty-state">Keranjang kosong 🛒</div>';
         summary.style.display = 'none'; return;
     }
     container.innerHTML = cart.map(item => `
         <div class="cart-item">
-            <div>
-                <div style="font-weight:bold;">${item.name}</div>
-                <div style="font-size:0.9rem; color:#666;">Rp ${item.price.toLocaleString()}</div>
-            </div>
+            <div class="cart-item-info"><h4>${item.name}</h4><div>Rp ${item.price.toLocaleString('id-ID')}</div></div>
             <div class="qty-controls">
-                <button class="qty-btn" onclick="updateQty('${item.id}', -1)">-</button>
-                <span>${item.qty}</span>
-                <button class="qty-btn" onclick="updateQty('${item.id}', 1)">+</button>
+                <button class="qty-btn" onclick="updateQuantity('${item.id}', -1)">-</button>
+                <span>${item.quantity}</span>
+                <button class="qty-btn" onclick="updateQuantity('${item.id}', 1)">+</button>
             </div>
         </div>`).join('');
     
-    const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-    document.getElementById('totalPrice').textContent = `Rp ${total.toLocaleString('id-ID')}`;
+    const total = cart.reduce((s,i) => s + (i.price * i.quantity), 0);
+    document.getElementById('subtotal').textContent = `Rp ${total.toLocaleString('id-ID')}`;
+    document.getElementById('totalPrice').textContent = `Rp ${(total + 10000).toLocaleString('id-ID')}`;
     summary.style.display = 'block';
 }
 
 function checkout() {
     if(!currentUser) {
-        closeCart(); showNotification("🔒 Login dulu");
+        closeCart(); showNotification('🔒 Login dulu untuk pesan');
         setTimeout(() => document.getElementById('authModal').classList.add('active'), 500);
         return;
     }
     const container = document.getElementById('cartItems');
-    container.innerHTML = `<div style="padding:15px; background:#f0fdf4; border-radius:12px;">
-        <h4 style="color:#166534; margin-bottom:10px;">📦 Detail Pengiriman</h4>
+    container.innerHTML = `<div style="padding:15px; background:#252525; border-radius:12px; border:1px solid #333;">
+        <h4 style="color:#FF9800; margin-bottom:10px;">📦 Detail Pengiriman</h4>
         <div class="form-group"><label class="form-label">Penerima</label><input type="text" class="search-input" value="${currentUser.name}" readonly></div>
         <div class="form-group"><label class="form-label">Alamat</label><textarea class="search-input" rows="2" readonly>${currentUser.address}</textarea></div>
     </div>`;
@@ -155,7 +168,7 @@ function checkout() {
 }
 
 function confirmOrder() {
-    const total = cart.reduce((s,i) => s + (i.price * i.qty), 0) + 10000;
+    const total = cart.reduce((s,i) => s + (i.price * i.quantity), 0) + 10000;
     const newOrder = {
         buyerName: currentUser.name,
         buyerPhone: currentUser.phone || '-',
@@ -178,8 +191,7 @@ function confirmOrder() {
 }
 function closeTracking() { document.getElementById('trackingModal').classList.remove('active'); }
 
-// --- 6. AUTHENTICATION (DUAL LOGIN: EMAIL / USERNAME) ---
-
+// --- 6. AUTH ---
 function checkSession() {
     const saved = localStorage.getItem('food_delivery_user_session');
     if(saved) currentUser = JSON.parse(saved);
@@ -198,46 +210,38 @@ function updateAuthUI() {
 }
 
 function handleLogin() {
-    const input = document.getElementById('loginInput').value.trim(); // Bisa Email / Username
+    const input = document.getElementById('loginInput').value.trim();
     const pass = document.getElementById('loginPassword').value;
 
-    // 1. CEK ADMIN
     if(input === 'admin' && pass === '12345') {
         sessionStorage.setItem('isAdminLoggedIn', 'true');
         window.location.href = 'admin.html';
         return;
     }
 
-    showNotification('🔄 Sedang memeriksa...');
-
-    // 2. CEK EMAIL DULU
-    database.ref('users').orderByChild('email').equalTo(input).once('value')
-        .then(snapshot => {
-            if(snapshot.exists()) {
-                validateUser(snapshot, pass);
-            } else {
-                // 3. JIKA EMAIL TIDAK ADA, CEK USERNAME
-                database.ref('users').orderByChild('username').equalTo(input).once('value')
-                    .then(snap2 => {
-                        if(snap2.exists()) {
-                            validateUser(snap2, pass);
-                        } else {
-                            showNotification('❌ Akun tidak ditemukan (Cek Email/Username).');
-                        }
-                    });
-            }
-        });
+    showNotification('🔄 Memeriksa akun...');
+    
+    // Cek Email
+    database.ref('users').orderByChild('email').equalTo(input).once('value').then(snap => {
+        if(snap.exists()) validateUser(snap, pass);
+        else {
+            // Cek Username
+            database.ref('users').orderByChild('username').equalTo(input).once('value').then(snap2 => {
+                if(snap2.exists()) validateUser(snap2, pass);
+                else showNotification('❌ Akun tidak ditemukan.');
+            });
+        }
+    });
 }
 
 function validateUser(snapshot, password) {
     let foundUser = null;
     snapshot.forEach(child => { foundUser = child.val(); });
-
     if(foundUser.password === password) {
         currentUser = foundUser;
         localStorage.setItem('food_delivery_user_session', JSON.stringify(currentUser));
         updateAuthUI();
-        showNotification(`✅ Berhasil Masuk! Halo ${currentUser.name}`);
+        showNotification(`✅ Berhasil Masuk!`);
     } else {
         showNotification('❌ Password Salah!');
     }
@@ -245,7 +249,7 @@ function validateUser(snapshot, password) {
 
 function handleRegister() {
     const name = document.getElementById('regName').value;
-    const username = document.getElementById('regUsername').value; // NEW
+    const username = document.getElementById('regUsername').value;
     const email = document.getElementById('regEmail').value;
     const phone = document.getElementById('regPhone').value;
     const pass = document.getElementById('regPass').value;
@@ -253,17 +257,13 @@ function handleRegister() {
 
     if(name && username && email && phone && pass && address) {
         const newUser = { name, username, email, phone, password: pass, address };
-        
-        // Simpan ke Firebase
         database.ref('users').push(newUser).then(() => {
             currentUser = newUser;
             localStorage.setItem('food_delivery_user_session', JSON.stringify(currentUser));
             updateAuthUI();
             showNotification('✅ Akun Berhasil Dibuat!');
-        }).catch(err => showNotification('❌ Gagal mendaftar.'));
-    } else {
-        showNotification('❌ Mohon lengkapi semua data.');
-    }
+        });
+    } else { showNotification('❌ Data belum lengkap.'); }
 }
 
 function handleLogout() {
@@ -277,7 +277,7 @@ function handleLogout() {
     setTimeout(() => window.location.reload(), 1000);
 }
 
-// --- 7. UTILS & PROFILE ---
+// --- UTILS ---
 function toggleUserMenu() { currentUser ? openProfile() : document.getElementById('authModal').classList.add('active'); }
 function showLogin() { document.getElementById('loginForm').style.display='block'; document.getElementById('registerForm').style.display='none'; document.getElementById('authTitle').textContent='Login'; }
 function showRegister() { document.getElementById('loginForm').style.display='none'; document.getElementById('registerForm').style.display='block'; document.getElementById('authTitle').textContent='Daftar Akun'; }
@@ -287,14 +287,12 @@ function openProfile() {
     if (!currentUser) return;
     try {
         const history = JSON.parse(localStorage.getItem('food_delivery_orders') || '[]');
-        
-        document.getElementById('profileName').textContent = currentUser.name || 'User';
-        document.getElementById('profileUsername').textContent = '@' + (currentUser.username || '-'); // NEW
-        document.getElementById('profileEmail').textContent = currentUser.email || '-';
-        document.getElementById('profilePhone').textContent = currentUser.phone || '-';
-        document.getElementById('profileAddress').textContent = currentUser.address || '-';
+        document.getElementById('profileName').textContent = currentUser.name;
+        document.getElementById('profileUsername').textContent = '@' + (currentUser.username || '-');
+        document.getElementById('profileEmail').textContent = currentUser.email;
+        document.getElementById('profilePhone').textContent = currentUser.phone;
+        document.getElementById('profileAddress').textContent = currentUser.address;
         document.getElementById('profileOrders').textContent = history.length;
-        
         document.getElementById('profileModal').classList.add('active');
     } catch (e) { console.error(e); }
 }
