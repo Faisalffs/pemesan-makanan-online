@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Food Delivery - Pesan Makanan</title>
-    
-    <link rel="stylesheet" href="style.css?v=99">
-
+    <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
@@ -16,6 +14,14 @@
         <div class="header-content">
             <div class="logo">🍔 Food Delivery</div>
             <div class="header-actions">
+                <button class="btn btn-secondary" id="trackingBtn" style="display:none;" onclick="openTrackingStatus()">
+                    🚚 Status Pesanan
+                </button>
+                
+                <button class="btn btn-secondary" id="historyBtn" style="display:none;" onclick="openHistoryModal()">
+                    🧾 Riwayat
+                </button>
+
                 <button class="btn btn-secondary" id="userBtn" onclick="toggleUserMenu()">
                     <span id="userDisplay">👤 Login</span>
                 </button>
@@ -40,7 +46,6 @@
                 <button class="chip" onclick="filterCategory('minuman')">🥤 Minuman</button>
             </div>
         </div>
-
         <div class="menu-grid" id="menuGrid">
             <div class="empty-state">Sedang memuat menu... ⌛</div>
         </div>
@@ -55,8 +60,16 @@
             <div class="modal-body">
                 <div id="cartItems"></div>
                 <div id="cartSummary" style="display: none; margin-top: 20px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 1rem; color: var(--color-text-light); margin-bottom: 5px;">
+                        <span>Subtotal</span>
+                        <span id="subtotal">Rp 0</span> 
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 1rem; color: var(--color-text-light); margin-bottom: 8px;">
+                        <span>Biaya Pengiriman</span>
+                        <span>Rp 10.000</span> 
+                    </div>
                     <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.1rem; margin-bottom: 16px;">
-                        <span>Total</span>
+                        <span>Total Akhir</span>
                         <span id="totalPrice">Rp 0</span>
                     </div>
                     <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="checkout()">Checkout</button>
@@ -72,10 +85,11 @@
                 <button class="close-btn" onclick="closeAuth()">&times;</button>
             </div>
             <div class="modal-body">
+                
                 <div id="loginForm">
                     <div class="form-group">
                         <label class="form-label">Username / Email</label>
-                        <input type="text" class="search-input" id="loginInput" placeholder="admin atau username">
+                        <input type="text" class="search-input" id="loginInput" placeholder="Masuk pakai email atau username">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Password</label>
@@ -88,14 +102,31 @@
                 </div>
 
                 <div id="registerForm" style="display: none;">
-                    <div class="form-group"><label class="form-label">Nama Lengkap</label><input type="text" class="search-input" id="regName"></div>
-                    <div class="form-group"><label class="form-label">Username</label><input type="text" class="search-input" id="regUsername"></div>
-                    <div class="form-group"><label class="form-label">Email</label><input type="email" class="search-input" id="regEmail"></div>
-                    <div class="form-group"><label class="form-label">Nomor HP</label><input type="tel" class="search-input" id="regPhone"></div>
-                    <div class="form-group"><label class="form-label">Password</label><input type="password" class="search-input" id="regPass"></div>
-                    <div class="form-group"><label class="form-label">Alamat</label><textarea class="search-input" id="regAddress" rows="2"></textarea></div>
-                    
-                    <button type="button" class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="handleRegister()">Daftar Sekarang</button>
+                    <div class="form-group">
+                        <label class="form-label">Nama Lengkap</label>
+                        <input type="text" class="search-input" id="regName" placeholder="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Username (Unik)</label>
+                        <input type="text" class="search-input" id="regUsername" placeholder="Contoh: john123">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="search-input" id="regEmail" placeholder="email@contoh.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nomor HP</label>
+                        <input type="tel" class="search-input" id="regPhone">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="search-input" id="regPass">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Alamat Lengkap</label>
+                        <textarea class="search-input" id="regAddress" rows="2"></textarea>
+                    </div>
+                    <button type="button" class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="handleRegister()">Daftar</button>
                     <p style="text-align: center; margin-top: 16px; font-size: 0.9rem;">
                         Sudah punya akun? <a href="#" onclick="showLogin()" style="color: var(--color-primary); font-weight: bold;">Login</a>
                     </p>
@@ -112,30 +143,45 @@
             </div>
             <div class="modal-body">
                 <div style="text-align: center; margin-bottom: 24px;">
-                    <div style="width: 80px; height: 80px; background: var(--color-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; color: white; margin: 0 auto 16px;">👤</div>
+                    <div style="width: 80px; height: 80px; background: var(--color-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; color: var(--color-bg); margin: 0 auto 16px;">👤</div>
                     <h3 id="profileName" style="margin:0;">User</h3>
-                    <div id="profileUsername" style="color: var(--color-primary); font-weight: bold; margin-bottom: 5px;">@username</div>
-                    <div id="profileEmail" style="color: #666; font-size: 0.9rem;">-</div>
+                    <div id="profileUsername" style="color: var(--color-secondary); font-weight: bold; margin-bottom: 5px;">@username</div>
+                    <div id="profileEmail" style="color: var(--color-text-light); font-size: 0.9rem;">email@example.com</div>
                 </div>
-                <div style="background: var(--color-bg); padding: 15px; border-radius: 12px; margin-bottom: 15px;">
-                    <div style="font-size: 0.85rem; color: #666;">Nomor HP</div>
+                <div style="background: var(--color-surface); padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--color-border);">
+                    <div style="font-size: 0.85rem; color: var(--color-text-light);">Nomor HP</div>
                     <div id="profilePhone" style="font-weight: 600;">-</div>
                 </div>
-                <div style="background: var(--color-bg); padding: 15px; border-radius: 12px; margin-bottom: 25px;">
-                    <div style="font-size: 0.85rem; color: #666;">Alamat</div>
+                <div style="background: var(--color-surface); padding: 15px; border-radius: 12px; margin-bottom: 25px; border: 1px solid var(--color-border);">
+                    <div style="font-size: 0.85rem; color: var(--color-text-light);">Alamat</div>
                     <div id="profileAddress" style="font-weight: 600;">-</div>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid var(--color-border); border-radius: 12px; margin-bottom: 25px;">
-                    <div>Total Pesanan</div>
-                    <div style="font-weight: 800; font-size: 1.2rem; color: var(--color-primary);">
-                        <span id="profileOrders">0</span> x
-                    </div>
-                </div>
+                
+                <div style="height: 25px;"></div> 
+                
                 <button class="btn btn-danger" style="width: 100%; justify-content: center;" onclick="handleLogout()">Keluar / Logout</button>
             </div>
         </div>
     </div>
 
+    <div class="modal" id="historyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Riwayat Pesanan 🧾</h3>
+                <button class="close-btn" onclick="closeHistoryModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="historyListContent" style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
+                    <div class="empty-state" style="padding: 20px;">Sedang memuat riwayat...</div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="closeHistoryModal()">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div class="modal" id="trackingModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -143,34 +189,11 @@
                 <button class="close-btn" onclick="closeTracking()">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="tracking-step completed">
-                    <div class="tracking-icon">✓</div>
-                    <div>
-                        <div style="font-weight: 600;">Pesanan Diterima</div>
-                        <div style="font-size: 0.9rem; color: #666;">Restoran sedang menyiapkan</div>
-                    </div>
-                </div>
-                <div class="tracking-step completed">
-                    <div class="tracking-icon">✓</div>
-                    <div>
-                        <div style="font-weight: 600;">Driver Menjemput</div>
-                        <div style="font-size: 0.9rem; color: #666;">Driver menuju resto</div>
-                    </div>
-                </div>
-                <div class="tracking-step">
-                    <div class="tracking-icon">🛵</div>
-                    <div>
-                        <div style="font-weight: 600;">Sedang Diantar</div>
-                        <div style="font-size: 0.9rem; color: #666;">Estimasi tiba: 15 menit</div>
-                    </div>
-                </div>
-                <div style="text-align: center; margin-top: 30px;">
-                    <button class="btn btn-secondary" onclick="closeTracking()">Tutup</button>
-                </div>
+                <div class="empty-state">Memuat status...</div>
             </div>
         </div>
     </div>
 
-    <script src="script.js?v=99"></script>
+    <script src="script.js"></script>
 </body>
 </html>
