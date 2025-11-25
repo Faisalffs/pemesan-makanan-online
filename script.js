@@ -1,5 +1,5 @@
 /* ======================================================== */
-/* 💻 script.js (KODE GABUNGAN: USER & ADMIN LOGIC)        */
+/* 💻 script.js (KODE GABUNGAN: USER & ADMIN LOGIC)         */
 /* ======================================================== */
 
 // --- 1. FIREBASE CONFIGURATION ---
@@ -408,8 +408,6 @@ function updateAuthUI() {
     }
 }
 
-// --- FIX & ADDED FUNCTIONS FOR AUTH UI TOGGLE (Penting untuk tombol Profil) ---
-
 function toggleUserMenu() {
     if (currentUser) {
         openProfile();
@@ -448,8 +446,6 @@ function closeAuth() {
     const authModal = document.getElementById('authModal');
     if (authModal) authModal.classList.remove('active');
 }
-
-// --- END ADDED FUNCTIONS ---
 
 function handleLogin() {
     const input = document.getElementById('loginInput').value.trim();
@@ -579,7 +575,7 @@ function renderOrderHistory() {
 
                 const items = order.items || [];
                 const itemNames = items.slice(0, 3).map(i => `${i.quantity || 1}x ${i.name || 'Item Tak Dikenal'}`).join(', ') + 
-                                     (items.length > 3 ? ` dan ${items.length - 3} lainnya` : '');
+                                  (items.length > 3 ? ` dan ${items.length - 3} lainnya` : '');
 
                 historyHTML += `
                     <div style="padding: 10px; border: 1px solid var(--color-border); border-radius: 8px; margin-bottom: 10px; background: var(--color-bg);">
@@ -646,7 +642,7 @@ window.onclick = function(e) {
 }
 
 /* ======================================================== */
-/* FUNGSI ADMIN MODE (ADMIN.HTML)                           */
+/* FUNGSI ADMIN MODE (ADMIN.HTML)                        */
 /* ======================================================== */
 
 function initAdminMode() {
@@ -824,227 +820,192 @@ function listenOrders() {
             });
 
             if (activeDiv) {
-                if(activeOrdersCount > 0) activeDiv.innerHTML = activeHTML;
-                else activeDiv.innerHTML = '<div class="empty-state">Tidak ada pesanan aktif. Santai dulu 😎</div>';
+                if (activeOrdersCount > 0) {
+                    activeDiv.innerHTML = activeHTML;
+                } else {
+                    activeDiv.innerHTML = '<div class="empty-state">🎉 Tidak ada pesanan yang sedang diproses. Santai sejenak!</div>';
+                }
             }
+            
             if (completedDiv) {
-                if(completedOrdersCount > 0) completedDiv.innerHTML = completedHTML;
-                else completedDiv.innerHTML = '<div class="empty-state">Belum ada riwayat pesanan selesai.</div>';
+                if (completedOrdersCount > 0) {
+                    completedDiv.innerHTML = completedHTML;
+                } else {
+                    completedDiv.innerHTML = '<div class="empty-state">Belum ada riwayat pesanan selesai.</div>';
+                }
             }
 
-            // Update badge for active orders
-            const badge = document.getElementById('orderBadge');
-            if(badge) badge.textContent = activeOrdersCount;
-
-        } else {
-            if(activeDiv) activeDiv.innerHTML = '<div class="empty-state">Tidak ada pesanan.</div>';
-            if(completedDiv) completedDiv.innerHTML = '<div class="empty-state">Tidak ada riwayat.</div>';
-            const badge = document.getElementById('orderBadge');
-            if(badge) badge.textContent = 0;
+        } else { 
+            if(activeDiv) activeDiv.innerHTML = '<div class="empty-state">🍽️ Belum ada pesanan masuk.</div>';
+            if(completedDiv) completedDiv.innerHTML = '<div class="empty-state">Belum ada riwayat pesanan selesai.</div>';
         }
     });
 }
 
-function updStatus(id, newStatus) {
-    if(!confirm(`Yakin ingin mengubah status order ${id} menjadi ${newStatus}?`)) return;
-    
-    // Logic untuk auto-update status:
-    const update = { status: newStatus };
+function updStatus(id, s) { 
+    db.ref('orders/'+id).update({status: s}); 
+}
 
-    if (newStatus === 'Diproses') {
-        // Jika diterima, status selanjutnya adalah "Sedang Diantar" (simulasi)
-        setTimeout(() => {
-            db.ref('orders/' + id).update({ status: 'Sedang Diantar' })
-                .then(() => showNotification('Status order di-update: Sedang Diantar'))
-                .catch(err => console.error("Update error:", err));
-        }, 15000); // 15 detik (simulasi waktu proses)
-        
-    } else if (newStatus === 'Selesai') {
-        update.status = 'Selesai';
+function delOrder(id) { 
+    if(confirm('Yakin ingin menghapus riwayat pesanan ini? Tindakan ini tidak dapat dibatalkan.')) {
+        db.ref('orders/'+id).remove(); 
     }
-    
-    db.ref('orders/' + id).update(update)
-        .then(() => showNotification(`Status order di-update: ${newStatus}`))
-        .catch(err => showNotification(`Gagal update status: ${err.message}`));
 }
 
-function delOrder(id) {
-    if(!confirm('Yakin ingin menghapus riwayat order ini? Aksi ini tidak dapat dibatalkan.')) return;
+// --- 7. ADMIN MENU MANAGEMENT ---
+function addMenu(e) {
+    e.preventDefault();
+    const btn = document.getElementById('saveBtn');
+    const statusDiv = document.getElementById('status');
+    const type = document.querySelector('input[name="imgType"]:checked').value;
     
-    db.ref('orders/' + id).remove()
-        .then(() => showNotification('Riwayat order berhasil dihapus.'))
-        .catch(err => showNotification('Gagal menghapus riwayat.'));
+    btn.disabled = true; btn.textContent = "Memproses Data...";
+    if (statusDiv) statusDiv.textContent = "";
+
+    if (type === 'file') {
+        const file = document.getElementById('mImgFile').files[0];
+        if(!file) { alert("Pilih foto dulu!"); btn.disabled=false; btn.textContent="Simpan Menu Baru"; return; }
+        if(file.size > 700000) { alert("❌ Foto terlalu besar! Max 700KB."); btn.disabled=false; btn.textContent="Simpan Menu Baru"; return; }
+
+        const reader = new FileReader();
+        reader.onload = function(evt) { saveToDb(evt.target.result); };
+        reader.readAsDataURL(file);
+    } else {
+        const emoji = document.getElementById('mEmojiTxt').value.trim();
+        if(!emoji) { alert("Isi emoji!"); btn.disabled=false; btn.textContent="Simpan Menu Baru"; return; }
+        saveToDb(emoji);
+    }
+
+    function saveToDb(img) {
+        const data = {
+            name: document.getElementById('mName').value,
+            price: parseInt(document.getElementById('mPrice').value),
+            category: document.getElementById('mCat').value,
+            description: document.getElementById('mDesc').value,
+            image: img,
+            rating: 5.0, deliveryTime: '20m'
+        };
+        db.ref('menu_items').push(data).then(() => {
+            if(statusDiv) {
+                statusDiv.textContent = "✅ Menu Berhasil Ditambahkan!";
+                statusDiv.style.color = "var(--color-secondary)";
+            }
+            const form = document.querySelector('#tabAdd form');
+            if(form) form.reset();
+            btn.disabled = false; btn.textContent = "Simpan Menu Baru";
+            setTimeout(() => switchTab('manage'), 1000);
+        }).catch(err => {
+            if(statusDiv) {
+                statusDiv.textContent = `❌ Gagal: ${err.message}`;
+                statusDiv.style.color = "var(--color-danger)";
+            }
+            btn.disabled = false; btn.textContent = "Simpan Menu Baru";
+        });
+    }
 }
-
-
-// --- 7. ADMIN MENU MANAGEMENT (TAMBAH/EDIT/HAPUS) ---
 
 function listenMenu() {
+    if(!document.getElementById('manageList')) return;
     db.ref('menu_items').on('value', snap => {
         const data = snap.val();
-        menuCache = data || {}; // Update cache
-        renderManageMenu();
+        menuCache = data || {};
+        const div = document.getElementById('manageList');
+        div.innerHTML = '';
+        
+        if(data) {
+            Object.keys(data).forEach(k => {
+                const m = data[k];
+                let thumb = (m.image && (m.image.startsWith('data:') || m.image.startsWith('http'))) 
+                    ? `<img src="${m.image}" class="manage-thumb" alt="${m.name}">` 
+                    : `<div class="manage-thumb">${m.image || '🍽️'}</div>`;
+                
+                div.innerHTML += `
+                    <div class="manage-item">
+                        ${thumb}
+                        <div class="manage-info">
+                            <div style="font-weight:bold; color:var(--color-text); font-size: 1.1rem;">${m.name}</div>
+                            <div style="font-size:0.9rem; color:var(--color-text-light);">Rp ${m.price ? m.price.toLocaleString() : 0} | ${m.category}</div>
+                        </div>
+                        <div class="manage-actions">
+                            <button class="btn btn-secondary btn-sm" onclick="openEditModal('${k}')">✏️ Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="delMenu('${k}', '${m.name}')">🗑️ Hapus</button>
+                        </div>
+                    </div>`;
+            });
+        } else { div.innerHTML = '<div class="empty-state">Menu kosong. Tambahkan menu baru!</div>'; }
     });
 }
-
-function renderManageMenu() {
-    const manageDiv = document.getElementById('menuListManage');
-    if (!manageDiv) return;
-    
-    if (!menuCache || Object.keys(menuCache).length === 0) {
-        manageDiv.innerHTML = '<div class="empty-state">Tidak ada menu. Silakan tambah menu baru di tab "Tambah Menu".</div>';
-        return;
+function delMenu(id, name) { 
+    if(confirm(`Yakin ingin menghapus menu "${name}"?`)) {
+        db.ref('menu_items/'+id).remove(); 
     }
-    
-    let menuHTML = Object.keys(menuCache).map(key => {
-        const item = menuCache[key];
-        let imagePreview = item.image ? `<img src="${item.image.startsWith('data:image') || item.image.startsWith('http') ? item.image : '🍽️'}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">` : '🍽️';
-        
-        return `
-            <div class="menu-manage-item">
-                <div class="menu-info">
-                    ${imagePreview}
-                    <div style="flex-grow: 1; padding-left: 15px;">
-                        <div style="font-weight: bold; font-size: 1.1rem;">${item.name}</div>
-                        <div style="font-size: 0.9rem; color: var(--color-text-light);">Rp ${item.price.toLocaleString('id-ID')} (${item.category})</div>
-                    </div>
-                </div>
-                <div class="menu-actions">
-                    <button class="btn btn-secondary btn-sm" onclick="openEditModal('${key}')">Edit</button>
-                    <button class="btn btn-danger btn-sm" onclick="delMenu('${key}')">Hapus</button>
-                </div>
-            </div>
-        `;
-    }).join('');
-    
-    manageDiv.innerHTML = menuHTML;
 }
-
-function addMenu() {
-    const name = document.getElementById('menuName').value;
-    const desc = document.getElementById('menuDesc').value;
-    const price = parseInt(document.getElementById('menuPrice').value) || 0;
-    const category = document.getElementById('menuCategory').value;
-    const imageType = document.querySelector('input[name="imageType"]:checked');
-    const image = imageType && imageType.value === 'file' 
-        ? document.getElementById('menuFile').files[0] 
-        : document.getElementById('menuEmoji').value;
-
-    if (!name || !price || !category) {
-        return showNotification('Nama, Harga, dan Kategori harus diisi!');
-    }
-    
-    const newItem = { name, description: desc, price, category, rating: 5.0, deliveryTime: '20m', image: '' };
-    
-    // Simpan ke Firebase Storage jika itu file
-    if (image && imageType.value === 'file') {
-        const storageRef = firebase.storage().ref();
-        const fileRef = storageRef.child(`menu_images/${image.name}_${Date.now()}`);
-        
-        fileRef.put(image).then((snapshot) => {
-            snapshot.ref.getDownloadURL().then(downloadURL => {
-                newItem.image = downloadURL;
-                db.ref('menu_items').push(newItem).then(() => showNotification('Menu berhasil ditambahkan (via File)!'));
-            });
-        }).catch(err => showNotification(`Gagal upload file: ${err.message}`));
-        
-    } else {
-        // Simpan sebagai emoji atau URL langsung jika bukan file
-        newItem.image = image;
-        db.ref('menu_items').push(newItem).then(() => showNotification('Menu berhasil ditambahkan (via Emoji/URL)!'));
-    }
-    
-    // Reset form
-    document.getElementById('addMenuForm').reset();
-    document.getElementById('menuEmoji').value = '🍽️';
-}
-
-function delMenu(id) {
-    if(!confirm('Yakin ingin menghapus menu ini?')) return;
-    
-    db.ref('menu_items/' + id).remove()
-        .then(() => showNotification('Menu berhasil dihapus.'))
-        .catch(err => showNotification('Gagal menghapus menu.'));
-}
-
-let currentEditId = null;
 
 function openEditModal(id) {
-    currentEditId = id;
     const item = menuCache[id];
-    if (!item) return showNotification('Data menu tidak ditemukan.');
+    if(!item) return;
+    if(document.getElementById('editId')) document.getElementById('editId').value = id;
+    if(document.getElementById('editName')) document.getElementById('editName').value = item.name;
+    if(document.getElementById('editPrice')) document.getElementById('editPrice').value = item.price;
+    if(document.getElementById('editCat')) document.getElementById('editCat').value = item.category;
+    if(document.getElementById('editDesc')) document.getElementById('editDesc').value = item.description;
     
-    // Isi form modal edit
-    document.getElementById('editMenuName').value = item.name || '';
-    document.getElementById('editMenuDesc').value = item.description || '';
-    document.getElementById('editMenuPrice').value = item.price || 0;
-    document.getElementById('editMenuCategory').value = item.category || 'Makanan';
+    const isFile = (item.image && (item.image.startsWith('data:') || item.image.startsWith('http')));
     
-    // Tentukan jenis input gambar mana yang ditampilkan (asumsi defaultnya emoji/url jika bukan url firebase)
-    const isFile = item.image && (item.image.startsWith('http') || item.image.startsWith('data:image'));
-    
-    document.getElementById(isFile ? 'radioEditFile' : 'radioEditEmoji').checked = true;
-    toggleInput(isFile ? 'file' : 'emoji', 'Edit');
-    
-    document.getElementById('editMenuEmoji').value = isFile ? '' : item.image || '🍽️';
-    
-    // Buka modal
-    const editModal = document.getElementById('editModal');
-    if(editModal) editModal.classList.add('active');
-}
+    if(document.getElementById('inputGroupFileEdit')) document.getElementById('inputGroupFileEdit').style.display = isFile ? 'block' : 'none';
+    if(document.getElementById('inputGroupEmojiEdit')) document.getElementById('inputGroupEmojiEdit').style.display = !isFile ? 'block' : 'none';
 
-function closeEditModal() {
-    const editModal = document.getElementById('editModal');
-    if(editModal) editModal.classList.remove('active');
-    currentEditId = null;
-}
-
-function saveEditMenu() {
-    if (!currentEditId) return;
-    
-    const name = document.getElementById('editMenuName').value;
-    const desc = document.getElementById('editMenuDesc').value;
-    const price = parseInt(document.getElementById('editMenuPrice').value) || 0;
-    const category = document.getElementById('editMenuCategory').value;
-    const imageType = document.querySelector('input[name="imageTypeEdit"]:checked');
-    const imageFile = document.getElementById('editMenuFile').files[0]; 
-    const imageEmoji = document.getElementById('editMenuEmoji').value;
-
-    if (!name || !price || !category) {
-        return showNotification('Nama, Harga, dan Kategori harus diisi!');
-    }
-
-    const updatedItem = { name, description: desc, price, category, rating: 5.0, deliveryTime: '20m' };
-    
-    // Logic untuk handling gambar saat update
-    const oldItem = menuCache[currentEditId];
-    
-    if (imageType.value === 'file' && imageFile) {
-        // Upload file baru
-        const storageRef = firebase.storage().ref();
-        const fileRef = storageRef.child(`menu_images/${imageFile.name}_${Date.now()}`);
-        
-        fileRef.put(imageFile).then((snapshot) => {
-            snapshot.ref.getDownloadURL().then(downloadURL => {
-                updatedItem.image = downloadURL;
-                db.ref('menu_items/' + currentEditId).update(updatedItem)
-                    .then(() => showNotification('Menu berhasil diupdate (dengan file baru)!'))
-                    .catch(err => showNotification(`Gagal update: ${err.message}`));
-            });
-        });
-        
-    } else if (imageType.value === 'emoji') {
-        updatedItem.image = imageEmoji;
-        db.ref('menu_items/' + currentEditId).update(updatedItem)
-            .then(() => showNotification('Menu berhasil diupdate!'))
-            .catch(err => showNotification(`Gagal update: ${err.message}`));
+    if (!isFile) {
+        if(document.getElementById('editEmojiTxt')) document.getElementById('editEmojiTxt').value = item.image || '';
+        if(document.querySelector('input[name="editImgType"][value="emoji"]')) document.querySelector('input[name="editImgType"][value="emoji"]').checked = true;
     } else {
-        // Jika tidak ada file baru diupload dan bukan emoji, pertahankan gambar lama
-        updatedItem.image = oldItem.image || '🍽️';
-        db.ref('menu_items/' + currentEditId).update(updatedItem)
-            .then(() => showNotification('Menu berhasil diupdate (tanpa ganti gambar)!'))
-            .catch(err => showNotification(`Gagal update: ${err.message}`));
+        if(document.getElementById('editEmojiTxt')) document.getElementById('editEmojiTxt').value = '';
+        if(document.querySelector('input[name="editImgType"][value="file"]')) document.querySelector('input[name="editImgType"][value="file"]').checked = true;
     }
-    
-    closeEditModal();
+
+    if(document.getElementById('editModal')) document.getElementById('editModal').classList.add('active');
+}
+
+function closeEditModal() { 
+    if(document.getElementById('editModal')) document.getElementById('editModal').classList.remove('active'); 
+}
+
+function saveEditMenu(e) {
+    e.preventDefault();
+    const id = document.getElementById('editId').value;
+    const btn = document.getElementById('editSaveBtn');
+    const type = document.querySelector('input[name="editImgType"]:checked').value;
+    const file = document.getElementById('editImgFile').files[0];
+    const emoji = document.getElementById('editEmojiTxt').value;
+
+    btn.disabled = true; btn.textContent = "Updating...";
+
+    let updates = {
+        name: document.getElementById('editName').value,
+        price: parseInt(document.getElementById('editPrice').value),
+        category: document.getElementById('editCat').value,
+        description: document.getElementById('editDesc').value
+    };
+
+    if (type === 'file' && file) {
+        if(file.size > 700000) { alert("Foto terlalu besar! Max 700KB."); btn.disabled=false; btn.textContent="Update Menu"; return; }
+        const reader = new FileReader();
+        reader.onload = function(evt) { updates.image = evt.target.result; pushUpdate(id, updates, btn); };
+        reader.readAsDataURL(file);
+    } else if (type === 'emoji' && emoji) {
+        updates.image = emoji; pushUpdate(id, updates, btn);
+    } else {
+        pushUpdate(id, updates, btn);
+    }
+}
+
+function pushUpdate(id, data, btn) {
+    db.ref('menu_items/' + id).update(data).then(() => {
+        alert("✅ Menu Berhasil Diupdate!");
+        closeEditModal();
+        btn.disabled = false; btn.textContent = "Update Menu";
+    }).catch(err => {
+         alert(`❌ Gagal Update: ${err.message}`);
+         btn.disabled = false; btn.textContent = "Update Menu";
+    });
 }
