@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Delivery - Pesan Makanan</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">🍔 Food Delivery</div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" id="userBtn" onclick="toggleUserMenu()">
+                    <span id="userDisplay">👤 Login</span>
+                </button>
+                <button class="btn btn-primary" onclick="openCart()">
+                    🛒 <span class="cart-badge" id="cartBadge">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container" id="mainContent">
+        <div class="search-filter">
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="Cari makanan..." id="searchInput" oninput="filterMenu()">
+            </div>
+            <div class="filter-chips">
+                <button class="chip active" onclick="filterCategory('all')">🔥 Semua</button>
+                <button class="chip" onclick="filterCategory('nasi')">🍚 Nasi</button>
+                <button class="chip" onclick="filterCategory('mie')">🍜 Mie</button>
+                <button class="chip" onclick="filterCategory('ayam')">🍗 Ayam</button>
+                <button class="chip" onclick="filterCategory('burger')">🍔 Burger</button>
+                <button class="chip" onclick="filterCategory('minuman')">🥤 Minuman</button>
+            </div>
+        </div>
+        <div class="menu-grid" id="menuGrid">
+            <div class="empty-state">Sedang memuat menu... ⌛</div>
+        </div>
+    </main>
+
+    <div class="modal" id="cartModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Keranjang</h3>
+                <button class="close-btn" onclick="closeCart()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="cartItems"></div>
+                <div id="cartSummary" style="display: none; margin-top: 20px;">
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.1rem; margin-bottom: 16px;">
+                        <span>Total</span>
+                        <span id="totalPrice">Rp 0</span>
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="checkout()">Checkout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="authModal">
+        <div class="modal-content" style="max-width: 380px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="authTitle">Login</h3>
+                <button class="close-btn" onclick="closeAuth()">&times;</button>
+            </div>
+            <div class="modal-body">
+                
+                <div id="loginForm">
+                    <div class="form-group">
+                        <label class="form-label">Username / Email</label>
+                        <input type="text" class="search-input" id="loginInput" placeholder="Masuk pakai email atau username">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="search-input" id="loginPassword">
+                    </div>
+                    <button type="button" class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="handleLogin()">Masuk</button>
+                    <p style="text-align: center; margin-top: 16px; font-size: 0.9rem;">
+                        Belum punya akun? <a href="#" onclick="showRegister()" style="color: var(--color-primary); font-weight: bold;">Daftar</a>
+                    </p>
+                </div>
+
+                <div id="registerForm" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Nama Lengkap</label>
+                        <input type="text" class="search-input" id="regName" placeholder="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Username (Unik)</label>
+                        <input type="text" class="search-input" id="regUsername" placeholder="Contoh: john123">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="search-input" id="regEmail" placeholder="email@contoh.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nomor HP</label>
+                        <input type="tel" class="search-input" id="regPhone">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="search-input" id="regPass">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Alamat Lengkap</label>
+                        <textarea class="search-input" id="regAddress" rows="2"></textarea>
+                    </div>
+                    <button type="button" class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="handleRegister()">Daftar</button>
+                    <p style="text-align: center; margin-top: 16px; font-size: 0.9rem;">
+                        Sudah punya akun? <a href="#" onclick="showLogin()" style="color: var(--color-primary); font-weight: bold;">Login</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="profileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Profil</h3>
+                <button class="close-btn" onclick="closeProfile()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <div style="width: 80px; height: 80px; background: var(--color-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; color: white; margin: 0 auto 16px;">👤</div>
+                    <h3 id="profileName" style="margin:0;">User</h3>
+                    <div id="profileUsername" style="color: var(--color-primary); font-weight: bold; margin-bottom: 5px;">@username</div>
+                    <div id="profileEmail" style="color: #666; font-size: 0.9rem;">email@example.com</div>
+                </div>
+                <div style="background: var(--color-bg); padding: 15px; border-radius: 12px; margin-bottom: 15px;">
+                    <div style="font-size: 0.85rem; color: #666;">Nomor HP</div>
+                    <div id="profilePhone" style="font-weight: 600;">-</div>
+                </div>
+                <div style="background: var(--color-bg); padding: 15px; border-radius: 12px; margin-bottom: 25px;">
+                    <div style="font-size: 0.85rem; color: #666;">Alamat</div>
+                    <div id="profileAddress" style="font-weight: 600;">-</div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid var(--color-border); border-radius: 12px; margin-bottom: 25px;">
+                    <div>Total Pesanan</div>
+                    <div style="font-weight: 800; font-size: 1.2rem; color: var(--color-primary);">
+                        <span id="profileOrders">0</span> x
+                    </div>
+                </div>
+                <button class="btn btn-danger" style="width: 100%; justify-content: center;" onclick="handleLogout()">Keluar / Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="trackingModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Lacak Pesanan</h3>
+                <button class="close-btn" onclick="closeTracking()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="tracking-step completed">
+                    <div class="tracking-icon">✓</div>
+                    <div>
+                        <div style="font-weight: 600;">Pesanan Diterima</div>
+                        <div style="font-size: 0.9rem; color: #666;">Restoran sedang menyiapkan</div>
+                    </div>
+                </div>
+                <div class="tracking-step completed">
+                    <div class="tracking-icon">✓</div>
+                    <div>
+                        <div style="font-weight: 600;">Driver Menjemput</div>
+                        <div style="font-size: 0.9rem; color: #666;">Driver menuju resto</div>
+                    </div>
+                </div>
+                <div class="tracking-step">
+                    <div class="tracking-icon">🛵</div>
+                    <div>
+                        <div style="font-weight: 600;">Sedang Diantar</div>
+                        <div style="font-size: 0.9rem; color: #666;">Estimasi tiba: 15 menit</div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="btn btn-secondary" onclick="closeTracking()">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=3"></script>
+</body>
+</html>

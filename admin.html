@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Daftar Pesanan</title>
+    
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        /* --- CSS TAMBAHAN UNTUK KARTU PESANAN (DARK MODE) --- */
+        .admin-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--color-border); padding-bottom: 10px; }
+        .tab-btn { background: none; border: none; color: var(--color-text-light); font-weight: bold; cursor: pointer; padding: 10px; font-size: 1rem; }
+        .tab-btn.active { color: var(--color-primary); border-bottom: 2px solid var(--color-primary); }
+
+        .order-card { 
+            background: var(--color-surface); 
+            border: 1px solid var(--color-border); 
+            border-radius: 12px; 
+            padding: 20px; 
+            margin-bottom: 20px; 
+            box-shadow: var(--shadow-soft);
+            border-left: 5px solid var(--color-primary); /* Penanda warna */
+        }
+
+        .order-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #333; }
+        .buyer-name { font-size: 1.2rem; font-weight: 800; color: white; }
+        .order-time { font-size: 0.85rem; color: var(--color-text-light); }
+        .order-status { background: #333; padding: 4px 10px; border-radius: 50px; font-size: 0.8rem; font-weight: bold; color: #FFD700; }
+
+        .order-items { margin-bottom: 15px; }
+        .order-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.95rem; color: #ccc; }
+        
+        .order-total { text-align: right; font-size: 1.2rem; font-weight: 800; color: var(--color-primary); margin-bottom: 15px; }
+
+        .order-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    </style>
+</head>
+<body>
+
+    <div class="admin-login-overlay" id="loginOverlay">
+        <div class="login-box">
+            <h2>🔒 Admin Panel</h2>
+            <div class="form-group"><input type="text" class="search-input" id="admUser" placeholder="Username"></div>
+            <div class="form-group"><input type="password" class="search-input" id="admPass" placeholder="Password"></div>
+            <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="adminLogin()">Masuk</button>
+            <div class="error-msg" id="errMsg">Username/Password Salah!</div>
+        </div>
+    </div>
+
+    <div class="main-container" id="adminPanel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+            <h2 style="color:white;">👨‍🍳 Dapur Admin</h2>
+            <button onclick="adminLogout()" class="btn btn-danger btn-sm">Logout</button>
+        </div>
+
+        <div class="admin-tabs">
+            <button class="tab-btn active" onclick="switchTab('orders')">📦 Pesanan Masuk</button>
+            <button class="tab-btn" onclick="switchTab('menu')">🍔 Tambah Menu</button>
+        </div>
+
+        <div id="ordersSection">
+            <div id="ordersList">
+                <div class="empty-state">Menunggu pesanan masuk... 📡</div>
+            </div>
+        </div>
+
+        <div id="menuSection" style="display: none;">
+            <form onsubmit="addMenu(event)">
+                <div class="form-group"><label class="form-label">Nama Makanan</label><input type="text" class="search-input" id="mName" required></div>
+                <div class="form-group"><label class="form-label">Harga</label><input type="number" class="search-input" id="mPrice" required></div>
+                <div class="form-group">
+                    <label class="form-label">Kategori</label>
+                    <select class="search-input" id="mCat">
+                        <option value="nasi">Nasi</option>
+                        <option value="mie">Mie</option>
+                        <option value="ayam">Ayam</option>
+                        <option value="burger">Burger</option>
+                        <option value="minuman">Minuman</option>
+                    </select>
+                </div>
+                <div class="form-group"><label class="form-label">Deskripsi</label><textarea class="search-input" id="mDesc" required></textarea></div>
+                <div class="form-group"><label class="form-label">Emoji</label><input type="text" class="search-input" id="mImg" required maxlength="2"></div>
+                <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;" id="saveBtn">Simpan Menu</button>
+            </form>
+            <div id="status" style="text-align:center; margin-top:20px; font-weight:bold; color: #4caf50;"></div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIG (SAMA DENGAN INDEX)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBDJO_Lsro9IpkXU1ducHRwZHKc5kH6GVQ",
+            authDomain: "pemesan-makanan-online.firebaseapp.com",
+            projectId: "pemesan-makanan-online",
+            storageBucket: "pemesan-makanan-online.firebasestorage.app",
+            messagingSenderId: "248955086378",
+            appId: "1:248955086378:web:c989826a8a78d0c9dfc553",
+            measurementId: "G-E2XHCSEWEC",
+            databaseURL: "https://pemesan-makanan-online-default-rtdb.asia-southeast1.firebasedatabase.app"
+        };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.database();
+
+        // LOGIN CHECK
+        if(sessionStorage.getItem('isAdmin') === 'true') {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            listenOrders(); // Mulai dengarkan pesanan
+        }
+
+        function adminLogin() {
+            const u = document.getElementById('admUser').value;
+            const p = document.getElementById('admPass').value;
+            if(u === 'admin' && p === '12345') {
+                sessionStorage.setItem('isAdmin', 'true');
+                location.reload();
+            } else {
+                document.getElementById('errMsg').style.display = 'block';
+            }
+        }
+
+        function adminLogout() {
+            sessionStorage.removeItem('isAdmin');
+            window.location.href = 'index.html';
+        }
+
+        // --- LOGIKA TAB ---
+        function switchTab(tabName) {
+            const ordersSec = document.getElementById('ordersSection');
+            const menuSec = document.getElementById('menuSection');
+            const tabs = document.querySelectorAll('.tab-btn');
+
+            if(tabName === 'orders') {
+                ordersSec.style.display = 'block';
+                menuSec.style.display = 'none';
+                tabs[0].classList.add('active');
+                tabs[1].classList.remove('active');
+            } else {
+                ordersSec.style.display = 'none';
+                menuSec.style.display = 'block';
+                tabs[0].classList.remove('active');
+                tabs[1].classList.add('active');
+            }
+        }
+
+        // --- LOGIKA REALTIME PESANAN (BAGIAN PENTING) ---
+        function listenOrders() {
+            const ordersRef = db.ref('orders');
+            
+            ordersRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                const listContainer = document.getElementById('ordersList');
+                listContainer.innerHTML = ''; // Bersihkan dulu
+
+                if(data) {
+                    // Ubah object ke array, lalu balik urutan (terbaru di atas)
+                    const orders = Object.keys(data).map(k => ({id: k, ...data[k]})).reverse();
+
+                    orders.forEach(order => {
+                        // Generate HTML Item
+                        let itemsHtml = order.items.map(item => 
+                            `<div class="order-item">
+                                <span>${item.qty}x ${item.name}</span>
+                                <span>Rp ${(item.price * item.qty).toLocaleString('id-ID')}</span>
+                             </div>`
+                        ).join('');
+
+                        // Warna Status
+                        let statusColor = '#FFD700'; // Kuning (Menunggu)
+                        if(order.status === 'Diproses') statusColor = '#0d9488'; // Hijau
+                        if(order.status === 'Selesai') statusColor = '#666'; // Abu
+
+                        // Generate HTML Kartu
+                        const cardHTML = `
+                            <div class="order-card">
+                                <div class="order-header">
+                                    <div>
+                                        <div class="buyer-name">${order.buyerName}</div>
+                                        <div class="order-time">${order.dateReadable || 'Baru saja'}</div>
+                                        <div style="font-size:0.9rem; color:#bbb; margin-top:4px;">📍 ${order.address}</div>
+                                    </div>
+                                    <div class="order-status" style="color:${statusColor}; border:1px solid ${statusColor}">${order.status}</div>
+                                </div>
+                                
+                                <div class="order-items">
+                                    ${itemsHtml}
+                                </div>
+                                
+                                <div class="order-total">
+                                    Total: Rp ${order.total.toLocaleString('id-ID')}
+                                </div>
+
+                                <div class="order-actions">
+                                    ${order.status === 'Menunggu Konfirmasi' ? 
+                                        `<button class="btn btn-primary btn-sm" onclick="updateStatus('${order.id}', 'Diproses')">Terima Pesanan</button>` : 
+                                        ''}
+                                    ${order.status === 'Diproses' ? 
+                                        `<button class="btn btn-secondary btn-sm" onclick="updateStatus('${order.id}', 'Selesai')">Selesaikan</button>` : 
+                                        ''}
+                                    <button class="btn btn-danger btn-sm" onclick="deleteOrder('${order.id}')">Hapus</button>
+                                </div>
+                            </div>
+                        `;
+                        listContainer.innerHTML += cardHTML;
+                    });
+                } else {
+                    listContainer.innerHTML = '<div class="empty-state">Belum ada pesanan masuk hari ini.</div>';
+                }
+            });
+        }
+
+        // --- ACTION UPDATE STATUS ---
+        function updateStatus(orderId, newStatus) {
+            db.ref('orders/' + orderId).update({ status: newStatus });
+        }
+
+        function deleteOrder(orderId) {
+            if(confirm('Hapus riwayat pesanan ini?')) {
+                db.ref('orders/' + orderId).remove();
+            }
+        }
+
+        // --- LOGIKA TAMBAH MENU (Sama) ---
+        function addMenu(e) {
+            e.preventDefault();
+            const btn = document.getElementById('saveBtn');
+            const status = document.getElementById('status');
+            
+            btn.disabled = true;
+            btn.textContent = "Menyimpan...";
+
+            const data = {
+                name: document.getElementById('mName').value,
+                price: parseInt(document.getElementById('mPrice').value),
+                category: document.getElementById('mCat').value,
+                description: document.getElementById('mDesc').value,
+                image: document.getElementById('mImg').value,
+                rating: 5.0
+            };
+
+            db.ref('menu_items').push(data).then(() => {
+                status.textContent = "✅ Menu Ditambahkan!";
+                document.querySelector('form').reset();
+                btn.disabled = false; btn.textContent = "Simpan Menu";
+            });
+        }
+    </script>
+</body>
+</html>
