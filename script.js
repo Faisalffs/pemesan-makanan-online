@@ -1,5 +1,4 @@
 // --- 1. FIREBASE CONFIGURATION ---
-// (Pastikan URL ini SAMA PERSIS dengan yang di admin.html)
 const firebaseConfig = {
     apiKey: "AIzaSyBDJO_Lsro9IpkXU1ducHRwZHKc5kH6GVQ",
     authDomain: "pemesan-makanan-online.firebaseapp.com",
@@ -26,7 +25,7 @@ window.onload = function() {
     fetchMenuFromFirebase();
 };
 
-// --- 4. MENU LOGIC (BAGIAN YANG DIPERBAIKI) ---
+// --- 4. MENU LOGIC (INI BAGIAN YANG DIPERBAIKI) ---
 function fetchMenuFromFirebase() {
     const menuRef = database.ref('menu_items');
     menuRef.on('value', (snapshot) => {
@@ -61,20 +60,21 @@ function renderMenu() {
     }
 
     grid.innerHTML = filtered.map(item => {
-        // --- LOGIKA DETEKSI GAMBAR ---
-        // Cek apakah ini Foto (Base64/URL) atau Emoji Biasa
-        let imageHTML = '';
+        // --- LOGIKA BARU: DETEKSI GAMBAR VS EMOJI ---
+        let tampilanGambar = '';
+        
+        // Cek apakah data image dimulai dengan "data:image" (Hasil Upload) atau "http" (Link internet)
         if (item.image.startsWith('data:image') || item.image.startsWith('http')) {
-            // Ini Foto
-            imageHTML = `<img src="${item.image}" alt="${item.name}" style="width:100%; height:100%; object-fit:cover;">`;
+            // Tampilkan sebagai FOTO
+            tampilanGambar = `<img src="${item.image}" alt="${item.name}" style="width:100%; height:100%; object-fit:cover;">`;
         } else {
-            // Ini Emoji
-            imageHTML = item.image;
+            // Tampilkan sebagai EMOJI (Teks Biasa)
+            tampilanGambar = item.image;
         }
 
         return `
         <div class="menu-card">
-            <div class="menu-img">${imageHTML}</div>
+            <div class="menu-img">${tampilanGambar}</div>
             <div class="menu-content">
                 <h3 class="menu-title">${item.name}</h3>
                 <p class="menu-desc">${item.description}</p>
